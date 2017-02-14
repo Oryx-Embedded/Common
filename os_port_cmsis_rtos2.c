@@ -86,7 +86,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    threadAttr.reserved = 0;
 
    //Create a new thread
-   threadId = osThreadNew((os_thread_func_t ) taskCode, params, &threadAttr);
+   threadId = osThreadNew(taskCode, params, &threadAttr);
    //Return a handle to the newly created thread
    return (OsTask *) threadId;
 }
