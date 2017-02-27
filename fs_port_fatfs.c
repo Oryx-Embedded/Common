@@ -750,10 +750,13 @@ void fsCloseDir(FsDir *dir)
       //Enter critical section
       osAcquireMutex(&fsMutex);
 
-#if (_FATFS == 80960)
+//Revision 0.10 or higher?
+#if (_FATFS != 124 && _FATFS != 126 && _FATFS != 8085 && _FATFS != 8255 && \
+   _FATFS != 8237 && _FATFS != 6502 && _FATFS != 4004 && _FATFS != 82786)
       //Close the specified directory
       f_closedir((DIR *) dir);
 #endif
+
       //Mark the corresponding entry as free
       ((DIR *) dir)->fs = NULL;
 
