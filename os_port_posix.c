@@ -1,6 +1,6 @@
 /**
- * @file os_port_sys_bios.c
- * @brief RTOS abstraction layer (SYS/BIOS)
+ * @file os_port_windows.c
+ * @brief RTOS abstraction layer (POSIX Threads)
  *
  * @section License
  *
@@ -30,12 +30,10 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include "os_port.h"
-#include "os_port_sys_bios.h"
+#include "os_port_posix.h"
 #include "debug.h"
-
-//Variables
-static bool_t running = FALSE;
 
 
 /**
@@ -44,8 +42,7 @@ static bool_t running = FALSE;
 
 void osInitKernel(void)
 {
-   //The scheduler is not running
-   running = FALSE;
+   //Not implemented
 }
 
 
@@ -55,10 +52,7 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-   //The scheduler is now running
-   running = TRUE;
-   //Start the scheduler
-   BIOS_start();
+   //Not implemented
 }
 
 
@@ -76,24 +70,17 @@ void osStartKernel(void)
 OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    void *params, size_t stackSize, int_t priority)
 {
-   Error_Block eb;
-   Task_Params taskParams;
-   Task_Handle task;
+   int_t ret;
+   pthread_t thread;
 
-   //Initialize error block
-   Error_init(&eb);
+   //Create a new thread
+   ret = pthread_create(&thread, NULL, taskCode, params);
 
-   //Set parameters
-   Task_Params_init(&taskParams);
-   taskParams.arg0 = (UArg) params;
-   taskParams.stackSize = stackSize * sizeof(uint_t);
-   taskParams.priority = priority;
-
-   //Create a new task
-   task = Task_create((Task_FuncPtr) taskCode, &taskParams, &eb);
-
-   //Return a pointer to the newly created task
-   return task;
+   //Return a pointer to the newly created thread
+   if(ret == 0)
+      return (OsTask *) thread;
+   else
+      return NULL;
 }
 
 
@@ -104,8 +91,12 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
 
 void osDeleteTask(OsTask *task)
 {
-   //Delete the specified task
-   Task_delete(&task);
+   //Delete the calling thread?
+   if(task == NULL)
+   {
+      //Kill ourselves
+      pthread_exit(NULL);
+   }
 }
 
 
@@ -117,7 +108,7 @@ void osDeleteTask(OsTask *task)
 void osDelayTask(systime_t delay)
 {
    //Delay the task for the specified duration
-   Task_sleep(OS_MS_TO_SYSTICKS(delay));
+   sleep(delay);
 }
 
 
@@ -127,8 +118,7 @@ void osDelayTask(systime_t delay)
 
 void osSwitchTask(void)
 {
-   //Force a context switch
-   Task_yield();
+   //Not implemented
 }
 
 
@@ -138,12 +128,7 @@ void osSwitchTask(void)
 
 void osSuspendAllTasks(void)
 {
-   //Make sure the operating system is running
-   if(running)
-   {
-      //Disable the task scheduler
-      Task_disable();
-   }
+   //Not implemented
 }
 
 
@@ -153,12 +138,7 @@ void osSuspendAllTasks(void)
 
 void osResumeAllTasks(void)
 {
-   //Make sure the operating system is running
-   if(running)
-   {
-      //Enable the task scheduler
-      Task_enable();
-   }
+   //Not implemented
 }
 
 
@@ -171,11 +151,13 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
-   //Create an event object
-   event->handle = Event_create(NULL, NULL);
+   int_t ret;
 
-   //Check whether the returned handle is valid
-   if(event->handle != NULL)
+   //Create a semaphore object
+   ret = sem_init(event, 0, 0);
+
+   //Check whether the semaphore was successfully created
+   if(ret == 0)
       return TRUE;
    else
       return FALSE;
@@ -189,12 +171,8 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   //Make sure the handle is valid
-   if(event->handle != NULL)
-   {
-      //Properly dispose the event object
-      Event_delete(&event->handle);
-   }
+   //Properly dispose the event object
+   sem_destroy(event);
 }
 
 
@@ -205,8 +183,18 @@ void osDeleteEvent(OsEvent *event)
 
 void osSetEvent(OsEvent *event)
 {
-   //Set the specified event to the signaled state
-   Event_post(event->handle, Event_Id_00);
+   int_t ret;
+   int_t value;
+
+   //Get the current value of the semaphore
+   ret = sem_getvalue(event, &value);
+
+   //Nonsignaled state?
+   if(ret == 0 && value == 0)
+   {
+      //Set the specified event to the signaled state
+      sem_post(event);
+   }
 }
 
 
@@ -217,8 +205,16 @@ void osSetEvent(OsEvent *event)
 
 void osResetEvent(OsEvent *event)
 {
+   int_t ret;
+
    //Force the specified event to the nonsignaled state
-   Event_pend(event->handle, Event_Id_00, Event_Id_NONE, BIOS_NO_WAIT);
+   do
+   {
+      //Decrement the semaphore's count by one
+      ret = sem_trywait(event);
+
+      //Check status
+   } while(ret == 0);
 }
 
 
@@ -232,30 +228,61 @@ void osResetEvent(OsEvent *event)
 
 bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
-   Bool ret;
+   int_t ret;
+   struct timespec ts;
 
-   //Wait until the specified event is in the signaled state
+   //Wait until the specified event is in the signaled
+   //state or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      ret = Event_pend(event->handle, Event_Id_00,
-         Event_Id_NONE, BIOS_NO_WAIT);
+      ret = sem_trywait(event);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      ret = Event_pend(event->handle, Event_Id_00,
-         Event_Id_NONE, BIOS_WAIT_FOREVER);
+      ret = sem_wait(event);
    }
    else
    {
-      //Wait for the specified time interval
-      ret = Event_pend(event->handle, Event_Id_00,
-         Event_Id_NONE, OS_MS_TO_SYSTICKS(timeout));
+      //Get current time
+      clock_gettime(CLOCK_REALTIME, &ts);
+
+      //Set absolute timeout
+      ts.tv_sec += timeout / 1000;
+      ts.tv_nsec += (timeout % 1000) * 1000000;
+
+      //Normalize time stamp value
+      if(ts.tv_nsec >= 1000000000)
+      {
+         ts.tv_sec += 1;
+         ts.tv_nsec -= 1000000000;
+      }
+
+      //Wait until the specified event becomes set
+      ret = sem_timedwait(event, &ts);
    }
 
-   //The return value tells whether the event is set
-   return ret;
+   //Check whether the specified event is set
+   if(ret == 0)
+   {
+      //Force the event back to the nonsignaled state
+      do
+      {
+         //Decrement the semaphore's count by one
+         ret = sem_trywait(event);
+
+         //Check status
+      } while(ret == 0);
+
+      //The specified event is in the signaled state
+      return TRUE;
+   }
+   else
+   {
+      //The timeout interval elapsed
+      return FALSE;
+   }
 }
 
 
@@ -268,10 +295,7 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
 bool_t osSetEventFromIsr(OsEvent *event)
 {
-   //Set the specified event to the signaled state
-   Event_post(event->handle, Event_Id_00);
-
-   //The return value is not relevant
+   //Not implemented
    return FALSE;
 }
 
@@ -287,17 +311,13 @@ bool_t osSetEventFromIsr(OsEvent *event)
 
 bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
-   Semaphore_Params semaphoreParams;
+   int_t ret;
 
-   //Set parameters
-   Semaphore_Params_init(&semaphoreParams);
-   semaphoreParams.mode = Semaphore_Mode_COUNTING;
+   //Create a semaphore object
+   ret = sem_init(semaphore, 0, count);
 
-   //Create a semaphore
-   semaphore->handle = Semaphore_create(count, &semaphoreParams, NULL);
-
-   //Check whether the returned handle is valid
-   if(semaphore->handle != NULL)
+   //Check whether the semaphore was successfully created
+   if(ret == 0)
       return TRUE;
    else
       return FALSE;
@@ -311,12 +331,8 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
 void osDeleteSemaphore(OsSemaphore *semaphore)
 {
-   //Make sure the handle is valid
-   if(semaphore->handle != NULL)
-   {
-      //Properly dispose the specified semaphore
-      Semaphore_delete(&semaphore->handle);
-   }
+   //Properly dispose the semaphore object
+   sem_destroy(semaphore);
 }
 
 
@@ -330,27 +346,45 @@ void osDeleteSemaphore(OsSemaphore *semaphore)
 
 bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 {
-   Bool ret;
+   int_t ret;
+   struct timespec ts;
 
-   //Wait until the specified semaphore becomes available
+   //Wait until the semaphore is available or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      ret = Semaphore_pend(semaphore->handle, BIOS_NO_WAIT);
+      ret = sem_trywait(semaphore);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      ret = Semaphore_pend(semaphore->handle, BIOS_WAIT_FOREVER);
+      ret = sem_wait(semaphore);
    }
    else
    {
-      //Wait for the specified time interval
-      ret = Semaphore_pend(semaphore->handle, OS_MS_TO_SYSTICKS(timeout));
+      //Get current time
+      clock_gettime(CLOCK_REALTIME, &ts);
+
+      //Set absolute timeout
+      ts.tv_sec += timeout / 1000;
+      ts.tv_nsec += (timeout % 1000) * 1000000;
+
+      //Normalize time stamp value
+      if(ts.tv_nsec >= 1000000000)
+      {
+         ts.tv_sec += 1;
+         ts.tv_nsec -= 1000000000;
+      }
+
+      //Wait until the specified semaphore becomes available
+      ret = sem_timedwait(semaphore, &ts);
    }
 
-   //The return value tells whether the semaphore is available
-   return ret;
+   //Check whether the specified semaphore is available
+   if(ret == 0)
+      return TRUE;
+   else
+      return FALSE;
 }
 
 
@@ -362,7 +396,7 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 void osReleaseSemaphore(OsSemaphore *semaphore)
 {
    //Release the semaphore
-   Semaphore_post(semaphore->handle);
+   sem_post(semaphore);
 }
 
 
@@ -375,17 +409,13 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
-   Semaphore_Params semaphoreParams;
+   int_t ret;
 
-   //Set parameters
-   Semaphore_Params_init(&semaphoreParams);
-   semaphoreParams.mode = Semaphore_Mode_BINARY_PRIORITY;
+   //Create a mutex object
+   ret = pthread_mutex_init(mutex, NULL);
 
-   //Create a mutex
-   mutex->handle = Semaphore_create(1, &semaphoreParams, NULL);
-
-   //Check whether the returned handle is valid
-   if(mutex->handle != NULL)
+   //Check whether the mutex was successfully created
+   if(ret == 0)
       return TRUE;
    else
       return FALSE;
@@ -399,24 +429,20 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-   //Make sure the handle is valid
-   if(mutex->handle != NULL)
-   {
-      //Properly dispose the specified mutex
-      Semaphore_delete(&mutex->handle);
-   }
+   //Properly dispose the mutex object
+   pthread_mutex_destroy(mutex);
 }
 
 
 /**
  * @brief Acquire ownership of the specified mutex object
- * @param[in] mutex Pointer to the mutex object
+ * @param[in] mutex A handle to the mutex object
  **/
 
 void osAcquireMutex(OsMutex *mutex)
 {
    //Obtain ownership of the mutex object
-   Semaphore_pend(mutex->handle, BIOS_WAIT_FOREVER);
+   pthread_mutex_lock(mutex);
 }
 
 
@@ -428,7 +454,7 @@ void osAcquireMutex(OsMutex *mutex)
 void osReleaseMutex(OsMutex *mutex)
 {
    //Release ownership of the mutex object
-   Semaphore_post(mutex->handle);
+   pthread_mutex_unlock(mutex);
 }
 
 
@@ -439,13 +465,13 @@ void osReleaseMutex(OsMutex *mutex)
 
 systime_t osGetSystemTime(void)
 {
-   systime_t time;
+   struct timeval tv;
 
-   //Get current tick count
-   time = Clock_getTicks();
+   //Get current time
+   gettimeofday(&tv, NULL);
 
-   //Convert system ticks to milliseconds
-   return OS_SYSTICKS_TO_MS(time);
+   //Convert resulting value to milliseconds
+   return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 }
 
 
@@ -458,20 +484,8 @@ systime_t osGetSystemTime(void)
 
 void *osAllocMem(size_t size)
 {
-   void *p;
-
-   //Enter critical section
-   osSuspendAllTasks();
    //Allocate a memory block
-   p = malloc(size);
-   //Leave critical section
-   osResumeAllTasks();
-
-   //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n", size, (uintptr_t) p);
-
-   //Return a pointer to the newly allocated memory block
-   return p;
+   return malloc(size);
 }
 
 
@@ -482,17 +496,6 @@ void *osAllocMem(size_t size)
 
 void osFreeMem(void *p)
 {
-   //Make sure the pointer is valid
-   if(p != NULL)
-   {
-      //Debug message
-      TRACE_DEBUG("Freeing memory at 0x%08" PRIXPTR "\r\n", (uintptr_t) p);
-
-      //Enter critical section
-      osSuspendAllTasks();
-      //Free memory block
-      free(p);
-      //Leave critical section
-      osResumeAllTasks();
-   }
+   //Free memory block
+   free(p);
 }

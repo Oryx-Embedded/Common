@@ -43,6 +43,6 @@ void pathRemoveSlash(char_t *path);
 
 void pathCombine(char_t *path, const char_t *more, size_t maxLen);
 
-bool_t pathMatch(const char_t *path, const char_t* pattern);
+bool_t pathMatch(const char_t *path, const char_t *pattern);
 
 #endif

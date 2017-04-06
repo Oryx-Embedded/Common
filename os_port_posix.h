@@ -1,6 +1,6 @@
 /**
- * @file os_port_cmsis_rtos2.h
- * @brief RTOS abstraction layer (CMSIS-RTOS 2 / RTX v5)
+ * @file os_port_windows.h
+ * @brief RTOS abstraction layer (POSIX Threads)
  *
  * @section License
  *
@@ -24,24 +24,21 @@
  * @version 1.7.6
  **/
 
-#ifndef _OS_PORT_CMSIS_RTOS2_H
-#define _OS_PORT_CMSIS_RTOS2_H
+#ifndef _OS_PORT_POSIX_H
+#define _OS_PORT_POSIX_H
 
 //Dependencies
-#include "cmsis_os2.h"
-
-#ifdef RTE_CMSIS_RTOS2_RTX5
-#include "rtx_os.h"
-#endif
+#include <pthread.h>
+#include <semaphore.h>
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
-   #define OS_TASK_PRIORITY_NORMAL osPriorityNormal
+   #define OS_TASK_PRIORITY_NORMAL 0
 #endif
 
 //Task priority (high)
 #ifndef OS_TASK_PRIORITY_HIGH
-   #define OS_TASK_PRIORITY_HIGH osPriorityAboveNormal
+   #define OS_TASK_PRIORITY_HIGH 0
 #endif
 
 //Milliseconds to system ticks
@@ -72,39 +69,21 @@ typedef void OsTask;
  * @brief Event object
  **/
 
-typedef struct
-{
-   osSemaphoreId_t id;
-#if defined(os_CMSIS_RTX)
-   os_semaphore_t cb;
-#endif
-} OsEvent;
+typedef sem_t OsEvent;
 
 
 /**
  * @brief Semaphore object
  **/
 
-typedef struct
-{
-   osSemaphoreId_t id;
-#if defined(os_CMSIS_RTX)
-   os_semaphore_t cb;
-#endif
-} OsSemaphore;
+typedef sem_t OsSemaphore;
 
 
 /**
  * @brief Mutex object
  **/
 
-typedef struct
-{
-   osMutexId_t id;
-#if defined(os_CMSIS_RTX)
-   os_mutex_t cb;
-#endif
-} OsMutex;
+typedef pthread_mutex_t OsMutex;
 
 
 /**

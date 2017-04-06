@@ -345,7 +345,7 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
       {
          //The timeout value cannot be higher than 0xFFFE...
          n = MIN(timeout, 0xFFFE);
-          //Wait for the specified time interval
+         //Wait for the specified time interval
          res = os_sem_wait(event, n);
          //Decrement timeout value
          timeout -= n;

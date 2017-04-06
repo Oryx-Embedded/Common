@@ -364,7 +364,7 @@ void pathCombine(char_t *path, const char_t *more, size_t maxLen)
  * @return TRUE if the path matches the specified pattern, else FALSE
  **/
 
-bool_t pathMatch(const char_t *path, const char_t* pattern)
+bool_t pathMatch(const char_t *path, const char_t *pattern)
 {
    size_t i = 0;
    size_t j = 0;
