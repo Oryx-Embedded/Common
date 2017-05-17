@@ -60,20 +60,26 @@
 //Debugging macros
 #if (TRACE_LEVEL >= TRACE_LEVEL_FATAL)
    #define TRACE_FATAL(...) TRACE_PRINTF(__VA_ARGS__)
+   #define TRACE_FATAL_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
 #else
    #define TRACE_FATAL(...)
+   #define TRACE_FATAL_ARRAY(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_ERROR)
    #define TRACE_ERROR(...) TRACE_PRINTF(__VA_ARGS__)
+   #define TRACE_ERROR_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
 #else
    #define TRACE_ERROR(...)
+   #define TRACE_ERROR_ARRAY(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_WARNING)
    #define TRACE_WARNING(...) TRACE_PRINTF(__VA_ARGS__)
+   #define TRACE_WARNING_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
 #else
    #define TRACE_WARNING(...)
+   #define TRACE_WARNING_ARRAY(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_INFO)
