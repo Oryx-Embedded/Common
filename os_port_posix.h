@@ -1,5 +1,5 @@
 /**
- * @file os_port_windows.h
+ * @file os_port_posix.h
  * @brief RTOS abstraction layer (POSIX Threads)
  *
  * @section License
@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 #ifndef _OS_PORT_POSIX_H

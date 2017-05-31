@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 #ifndef _CPU_ENDIAN_H
@@ -219,84 +219,84 @@
 
 //Store unaligned 16-bit integer (little-endian encoding)
 #define STORE16LE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint16_t)(a) >> 0) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint16_t)(a) >> 8) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint16_t)(a) >> 0) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint16_t)(a) >> 8) & 0xFFU
 
 //Store unaligned 32-bit integer (big-endian encoding)
 #define STORE16BE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint16_t)(a) >> 8) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint16_t)(a) >> 0) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint16_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint16_t)(a) >> 0) & 0xFFU
 
 //Store unaligned 24-bit integer (little-endian encoding)
 #define STORE24LE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 0) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 8) & 0xFF, \
-   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 16) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 0) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 16) & 0xFFU
 
 //Store unaligned 24-bit integer (big-endian encoding)
 #define STORE24BE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 16) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 8) & 0xFF, \
-   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 0) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 16) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 0) & 0xFFU
 
 //Store unaligned 32-bit integer (little-endian encoding)
 #define STORE32LE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 0) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 8) & 0xFF, \
-   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 16) & 0xFF, \
-   ((uint8_t *)(p))[3] = ((uint32_t)(a) >> 24) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 0) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 16) & 0xFFU, \
+   ((uint8_t *)(p))[3] = ((uint32_t)(a) >> 24) & 0xFFU
 
 //Store unaligned 32-bit integer (big-endian encoding)
 #define STORE32BE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 24) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 16) & 0xFF, \
-   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 8) & 0xFF, \
-   ((uint8_t *)(p))[3] = ((uint32_t)(a) >> 0) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 24) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 16) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[3] = ((uint32_t)(a) >> 0) & 0xFFU
 
 //Store unaligned 64-bit integer (little-endian encoding)
 #define STORE64LE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint64_t)(a) >> 0) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint64_t)(a) >> 8) & 0xFF, \
-   ((uint8_t *)(p))[2] = ((uint64_t)(a) >> 16) & 0xFF, \
-   ((uint8_t *)(p))[3] = ((uint64_t)(a) >> 24) & 0xFF, \
-   ((uint8_t *)(p))[4] = ((uint64_t)(a) >> 32) & 0xFF, \
-   ((uint8_t *)(p))[5] = ((uint64_t)(a) >> 40) & 0xFF, \
-   ((uint8_t *)(p))[6] = ((uint64_t)(a) >> 48) & 0xFF, \
-   ((uint8_t *)(p))[7] = ((uint64_t)(a) >> 56) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint64_t)(a) >> 0) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint64_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint64_t)(a) >> 16) & 0xFFU, \
+   ((uint8_t *)(p))[3] = ((uint64_t)(a) >> 24) & 0xFFU, \
+   ((uint8_t *)(p))[4] = ((uint64_t)(a) >> 32) & 0xFFU, \
+   ((uint8_t *)(p))[5] = ((uint64_t)(a) >> 40) & 0xFFU, \
+   ((uint8_t *)(p))[6] = ((uint64_t)(a) >> 48) & 0xFFU, \
+   ((uint8_t *)(p))[7] = ((uint64_t)(a) >> 56) & 0xFFU
 
 //Store unaligned 64-bit integer (big-endian encoding)
 #define STORE64BE(a, p) \
-   ((uint8_t *)(p))[0] = ((uint64_t)(a) >> 56) & 0xFF, \
-   ((uint8_t *)(p))[1] = ((uint64_t)(a) >> 48) & 0xFF, \
-   ((uint8_t *)(p))[2] = ((uint64_t)(a) >> 40) & 0xFF, \
-   ((uint8_t *)(p))[3] = ((uint64_t)(a) >> 32) & 0xFF, \
-   ((uint8_t *)(p))[4] = ((uint64_t)(a) >> 24) & 0xFF, \
-   ((uint8_t *)(p))[5] = ((uint64_t)(a) >> 16) & 0xFF, \
-   ((uint8_t *)(p))[6] = ((uint64_t)(a) >> 8) & 0xFF, \
-   ((uint8_t *)(p))[7] = ((uint64_t)(a) >> 0) & 0xFF
+   ((uint8_t *)(p))[0] = ((uint64_t)(a) >> 56) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint64_t)(a) >> 48) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint64_t)(a) >> 40) & 0xFFU, \
+   ((uint8_t *)(p))[3] = ((uint64_t)(a) >> 32) & 0xFFU, \
+   ((uint8_t *)(p))[4] = ((uint64_t)(a) >> 24) & 0xFFU, \
+   ((uint8_t *)(p))[5] = ((uint64_t)(a) >> 16) & 0xFFU, \
+   ((uint8_t *)(p))[6] = ((uint64_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[7] = ((uint64_t)(a) >> 0) & 0xFFU
 
 //Swap a 16-bit integer
 #define SWAPINT16(x) ( \
-   (((x) & 0x00FF) << 8) | \
-   (((x) & 0xFF00) >> 8))
+   (((uint16_t)(x) & 0x00FFU) << 8) | \
+   (((uint16_t)(x) & 0xFF00U) >> 8))
 
 //Swap a 32-bit integer
 #define SWAPINT32(x) ( \
-   (((x) & 0x000000FFUL) << 24) | \
-   (((x) & 0x0000FF00UL) << 8) | \
-   (((x) & 0x00FF0000UL) >> 8) | \
-   (((x) & 0xFF000000UL) >> 24))
+   (((uint32_t)(x) & 0x000000FFUL) << 24) | \
+   (((uint32_t)(x) & 0x0000FF00UL) << 8) | \
+   (((uint32_t)(x) & 0x00FF0000UL) >> 8) | \
+   (((uint32_t)(x) & 0xFF000000UL) >> 24))
 
 //Swap a 64-bit integer
 #define SWAPINT64(x) ( \
-   (((x) & 0x00000000000000FFULL) << 56) | \
-   (((x) & 0x000000000000FF00ULL) << 40) | \
-   (((x) & 0x0000000000FF0000ULL) << 24) | \
-   (((x) & 0x00000000FF000000ULL) << 8) | \
-   (((x) & 0x000000FF00000000ULL) >> 8) | \
-   (((x) & 0x0000FF0000000000ULL) >> 24) | \
-   (((x) & 0x00FF000000000000ULL) >> 40) | \
-   (((x) & 0xFF00000000000000ULL) >> 56))
+   (((uint64_t)(x) & 0x00000000000000FFULL) << 56) | \
+   (((uint64_t)(x) & 0x000000000000FF00ULL) << 40) | \
+   (((uint64_t)(x) & 0x0000000000FF0000ULL) << 24) | \
+   (((uint64_t)(x) & 0x00000000FF000000ULL) << 8) | \
+   (((uint64_t)(x) & 0x000000FF00000000ULL) >> 8) | \
+   (((uint64_t)(x) & 0x0000FF0000000000ULL) >> 24) | \
+   (((uint64_t)(x) & 0x00FF000000000000ULL) >> 40) | \
+   (((uint64_t)(x) & 0xFF00000000000000ULL) >> 56))
 
 //Big-endian machine?
 #ifdef _CPU_BIG_ENDIAN

@@ -1,5 +1,5 @@
 /**
- * @file os_port_windows.c
+ * @file os_port_posix.c
  * @brief RTOS abstraction layer (POSIX Threads)
  *
  * @section License
@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level
@@ -34,6 +34,9 @@
 #include "os_port.h"
 #include "os_port_posix.h"
 #include "debug.h"
+
+//Pthread start routine
+typedef void *(*PthreadTaskCode) (void *params);
 
 
 /**
@@ -74,7 +77,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    pthread_t thread;
 
    //Create a new thread
-   ret = pthread_create(&thread, NULL, taskCode, params);
+   ret = pthread_create(&thread, NULL, (PthreadTaskCode) taskCode, params);
 
    //Return a pointer to the newly created thread
    if(ret == 0)

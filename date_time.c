@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Dependencies
@@ -93,7 +93,8 @@ const char_t *formatSystemTime(systime_t time, char_t *str)
    hours = time;
 
    //The str parameter is optional
-   if(!str) str = buffer;
+   if(!str)
+      str = buffer;
 
    //Format system time
    if(hours > 0)
@@ -132,7 +133,8 @@ const char_t *formatDate(const DateTime *date, char_t *str)
    static char_t buffer[40];
 
    //The str parameter is optional
-   if(!str) str = buffer;
+   if(!str)
+      str = buffer;
 
    //Format date
    if(date->dayOfWeek)
@@ -201,7 +203,8 @@ void convertUnixTimeToDate(time_t t, DateTime *date)
    uint32_t f;
 
    //Negative Unix time values are not supported
-   if(t < 1) t = 0;
+   if(t < 1)
+      t = 0;
 
    //Clear milliseconds
    date->milliseconds = 0;
