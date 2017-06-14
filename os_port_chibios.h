@@ -80,6 +80,11 @@
    #define MSG_OK RDY_OK
 #endif
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Task object
@@ -162,5 +167,10 @@ systime_t osGetSystemTime(void);
 //Memory management
 void *osAllocMem(size_t size);
 void osFreeMem(void *p);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -106,6 +106,11 @@
    #define TRACE_DEBUG_MPI(p, a)
 #endif
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //Debug related functions
 void debugInit(uint32_t baudrate);
 
@@ -114,5 +119,10 @@ void debugDisplayArray(FILE *stream,
 
 //Deprecated definitions
 #define TRACE_LEVEL_NO_TRACE TRACE_LEVEL_OFF
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

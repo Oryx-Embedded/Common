@@ -54,6 +54,11 @@
    #error FS_MAX_NAME_LEN parameter is not valid
 #endif
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief File attributes
@@ -143,5 +148,10 @@ error_t fsRemoveDir(const char_t *path);
 FsDir *fsOpenDir(const char_t *path);
 error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry);
 void fsCloseDir(FsDir *dir);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

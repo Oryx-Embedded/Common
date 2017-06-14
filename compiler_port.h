@@ -32,6 +32,11 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //Types
 typedef char char_t;
 typedef signed int int_t;
@@ -135,6 +140,11 @@ typedef uint32_t systime_t;
    #define __start_packed
    #undef __end_packed
    #define __end_packed
+#endif
+
+//C++ guard
+#ifdef __cplusplus
+   }
 #endif
 
 #endif

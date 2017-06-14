@@ -30,6 +30,11 @@
 //Dependencies
 #include "os_port.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //Path manipulation helper functions
 bool_t pathIsAbsolute(const char_t *path);
 bool_t pathIsRelative(const char_t *path);
@@ -44,5 +49,10 @@ void pathRemoveSlash(char_t *path);
 void pathCombine(char_t *path, const char_t *more, size_t maxLen);
 
 bool_t pathMatch(const char_t *path, const char_t *pattern);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

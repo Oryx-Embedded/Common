@@ -67,6 +67,11 @@
 //Leave interrupt service routine
 #define osExitIsr(flag)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Task object
@@ -167,5 +172,10 @@ void osFreeMem(void *p);
 #undef TCP_STATE_SYN_SENT
 #undef TCP_STATE_CLOSING
 #undef TCP_STATE_LAST_ACK
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -31,6 +31,11 @@
 #include <time.h>
 #include "os_port.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Date and time representation
@@ -60,5 +65,10 @@ void convertUnixTimeToDate(time_t t, DateTime *date);
 time_t convertDateToUnixTime(const DateTime *date);
 
 uint8_t computeDayOfWeek(uint16_t y, uint8_t m, uint8_t d);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

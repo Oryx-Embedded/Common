@@ -53,6 +53,11 @@
 //Leave interrupt service routine
 #define osExitIsr(flag)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Task object
@@ -144,5 +149,10 @@ void osFreeMem(void *p);
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #define strtok_r(str, delim, p) strtok(str, delim)
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

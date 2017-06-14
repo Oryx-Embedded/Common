@@ -394,6 +394,11 @@
 
 #endif
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //Byte order conversion functions
 uint16_t swapInt16(uint16_t value);
 uint32_t swapInt32(uint32_t value);
@@ -405,5 +410,10 @@ uint8_t reverseInt8(uint8_t value);
 uint16_t reverseInt16(uint16_t value);
 uint32_t reverseInt32(uint32_t value);
 uint64_t reverseInt64(uint64_t value);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

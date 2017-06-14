@@ -27,6 +27,11 @@
 #ifndef _ERROR_H
 #define _ERROR_H
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Error codes
@@ -243,5 +248,10 @@ typedef enum
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH
 } error_t;
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

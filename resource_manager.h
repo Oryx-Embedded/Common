@@ -31,6 +31,11 @@
 #include "compiler_port.h"
 #include "error.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Resource type
@@ -124,6 +129,11 @@ typedef struct
 error_t resOpenFile(FsFile *file, const DirEntry *dirEntry, uint_t mode);
 error_t resSeekFile(FsFile *file, uint32_t *position);
 uint_t resReadFile(FsFile *file, void *data, size_t length);
+#endif
+
+//C++ guard
+#ifdef __cplusplus
+   }
 #endif
 
 #endif

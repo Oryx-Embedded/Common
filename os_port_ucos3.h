@@ -63,6 +63,11 @@
 //Leave interrupt service routine
 #define osExitIsr(flag) OSIntExit()
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Task object
@@ -146,5 +151,10 @@ void osFreeMem(void *p);
 //Undefine conflicting definitions
 #undef TRACE_LEVEL_OFF
 #undef TRACE_LEVEL_INFO
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif
