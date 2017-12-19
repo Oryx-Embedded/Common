@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.8
+ * @version 1.8.0
  **/
 
 //Switch to the appropriate trace level
@@ -462,6 +462,8 @@ void osFreeMem(void *p)
 }
 
 
+#if 0
+
 /**
  * @brief FreeRTOS stack overflow hook
  **/
@@ -497,3 +499,5 @@ void vAssertCalled(const char *pcFile, unsigned long ulLine)
 
    taskEXIT_CRITICAL();
 }
+
+#endif

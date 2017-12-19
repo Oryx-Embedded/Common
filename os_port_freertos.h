@@ -21,16 +21,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.8
+ * @version 1.8.0
  **/
 
 #ifndef _OS_PORT_FREERTOS_H
 #define _OS_PORT_FREERTOS_H
 
 //Dependencies
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
+#ifdef __XTENSA__
+   #include "freertos/FreeRTOS.h"
+   #include "freertos/task.h"
+   #include "freertos/semphr.h"
+#else
+   #include "FreeRTOS.h"
+   #include "task.h"
+   #include "semphr.h"
+#endif
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
@@ -60,7 +66,9 @@
 #endif
 
 //Leave interrupt service routine
-#if defined(portEXIT_SWITCHING_ISR)
+#if defined(__XTENSA__)
+   #define osExitIsr(flag) if(flag) portYIELD_FROM_ISR()
+#elif defined(portEXIT_SWITCHING_ISR)
    #define osExitIsr(flag) portEXIT_SWITCHING_ISR()
 #elif defined(portEND_SWITCHING_ISR)
    #define osExitIsr(flag) portEND_SWITCHING_ISR(flag)

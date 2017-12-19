@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.8
+ * @version 1.8.0
  **/
 
 #ifndef _CPU_ENDIAN_H
@@ -195,6 +195,24 @@
    ((uint32_t)(((uint8_t *)(p))[2]) << 8) | \
    ((uint32_t)(((uint8_t *)(p))[3]) << 0))
 
+//Load unaligned 48-bit integer (little-endian encoding)
+#define LOAD48LE(p) ( \
+   ((uint64_t)(((uint8_t *)(p))[0]) << 0) | \
+   ((uint64_t)(((uint8_t *)(p))[1]) << 8) | \
+   ((uint64_t)(((uint8_t *)(p))[2]) << 16) | \
+   ((uint64_t)(((uint8_t *)(p))[3]) << 24) | \
+   ((uint64_t)(((uint8_t *)(p))[4]) << 32) | \
+   ((uint64_t)(((uint8_t *)(p))[5]) << 40)
+
+//Load unaligned 48-bit integer (big-endian encoding)
+#define LOAD48BE(p) ( \
+   ((uint64_t)(((uint8_t *)(p))[0]) << 40) | \
+   ((uint64_t)(((uint8_t *)(p))[1]) << 32) | \
+   ((uint64_t)(((uint8_t *)(p))[2]) << 24) | \
+   ((uint64_t)(((uint8_t *)(p))[3]) << 16) | \
+   ((uint64_t)(((uint8_t *)(p))[4]) << 8) | \
+   ((uint64_t)(((uint8_t *)(p))[5]) << 0))
+
 //Load unaligned 64-bit integer (little-endian encoding)
 #define LOAD64LE(p) ( \
    ((uint64_t)(((uint8_t *)(p))[0]) << 0) | \
@@ -252,6 +270,24 @@
    ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 16) & 0xFFU, \
    ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 8) & 0xFFU, \
    ((uint8_t *)(p))[3] = ((uint32_t)(a) >> 0) & 0xFFU
+
+//Store unaligned 48-bit integer (little-endian encoding)
+#define STORE48LE(a, p) \
+   ((uint8_t *)(p))[0] = ((uint64_t)(a) >> 0) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint64_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint64_t)(a) >> 16) & 0xFFU, \
+   ((uint8_t *)(p))[3] = ((uint64_t)(a) >> 24) & 0xFFU, \
+   ((uint8_t *)(p))[4] = ((uint64_t)(a) >> 32) & 0xFFU, \
+   ((uint8_t *)(p))[5] = ((uint64_t)(a) >> 40) & 0xFFU,
+
+//Store unaligned 48-bit integer (big-endian encoding)
+#define STORE48BE(a, p) \
+   ((uint8_t *)(p))[0] = ((uint64_t)(a) >> 40) & 0xFFU, \
+   ((uint8_t *)(p))[1] = ((uint64_t)(a) >> 32) & 0xFFU, \
+   ((uint8_t *)(p))[2] = ((uint64_t)(a) >> 24) & 0xFFU, \
+   ((uint8_t *)(p))[3] = ((uint64_t)(a) >> 16) & 0xFFU, \
+   ((uint8_t *)(p))[4] = ((uint64_t)(a) >> 8) & 0xFFU, \
+   ((uint8_t *)(p))[5] = ((uint64_t)(a) >> 0) & 0xFFU
 
 //Store unaligned 64-bit integer (little-endian encoding)
 #define STORE64LE(a, p) \

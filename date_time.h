@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.8
+ * @version 1.8.0
  **/
 
 #ifndef _DATE_TIME_H
@@ -63,6 +63,8 @@ time_t getCurrentUnixTime(void);
 
 void convertUnixTimeToDate(time_t t, DateTime *date);
 time_t convertDateToUnixTime(const DateTime *date);
+
+int_t compareDateTime(const DateTime *date1, const DateTime *date2);
 
 uint8_t computeDayOfWeek(uint16_t y, uint8_t m, uint8_t d);
 

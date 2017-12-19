@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.8
+ * @version 1.8.0
  **/
 
 //Dependencies
@@ -287,6 +287,54 @@ time_t convertDateToUnixTime(const DateTime *date)
 
    //Return Unix time
    return t;
+}
+
+
+/**
+ * @brief Compare dates
+ * @param[in] date1 Pointer to the first date
+ * @param[in] date2 Pointer to the second date
+ * @return Comparison result
+ **/
+
+int_t compareDateTime(const DateTime *date1, const DateTime *date2)
+{
+   int_t res;
+
+   //Perform comparison
+   if(date1->year < date2->year)
+      res = -1;
+   else if(date1->year > date2->year)
+      res = 1;
+   else if(date1->month < date2->month)
+      res = -1;
+   else if(date1->month > date2->month)
+      res = 1;
+   else if(date1->day < date2->day)
+      res = -1;
+   else if(date1->day > date2->day)
+      res = 1;
+   else if(date1->hours < date2->hours)
+      res = -1;
+   else if(date1->hours > date2->hours)
+      res = 1;
+   else if(date1->minutes < date2->minutes)
+      res = -1;
+   else if(date1->minutes > date2->minutes)
+      res = 1;
+   else if(date1->seconds < date2->seconds)
+      res = -1;
+   else if(date1->seconds > date2->seconds)
+      res = 1;
+   else if(date1->milliseconds < date2->milliseconds)
+      res = -1;
+   else if(date1->milliseconds > date2->milliseconds)
+      res = 1;
+   else
+      res = 0;
+
+   //Return comparison result
+   return res;
 }
 
 
