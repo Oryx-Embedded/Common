@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Dependencies
@@ -41,15 +41,22 @@ void debugDisplayArray(FILE *stream,
 {
    uint_t i;
 
+   //Dump the contents of the array
    for(i = 0; i < length; i++)
    {
       //Beginning of a new line?
       if((i % 16) == 0)
-         fprintf(stream, "%s", prepend);
+      {
+         TRACE_PRINTF("%s", prepend);
+      }
+
       //Display current data byte
-      fprintf(stream, "%02" PRIX8 " ", *((const uint8_t *) data + i));
+      TRACE_PRINTF("%02" PRIX8 " ", *((const uint8_t *) data + i));
+
       //End of current line?
       if((i % 16) == 15 || i == (length - 1))
-         fprintf(stream, "\r\n");
+      {
+         TRACE_PRINTF("\r\n");
+      }
    }
 }

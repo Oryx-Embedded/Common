@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _OS_PORT_CHIBIOS_H
@@ -121,7 +121,7 @@ typedef mutex_t OsMutex;
  * @brief Task routine
  **/
 
-typedef void (*OsTaskCode)(void *params);
+typedef void (*OsTaskCode)(void *param);
 
 
 //Kernel management
@@ -130,10 +130,10 @@ void osStartKernel(void);
 
 //Task management
 bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *params, void *stack, size_t stackSize, int_t priority);
+   void *param, void *stack, size_t stackSize, int_t priority);
 
 OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *params, size_t stackSize, int_t priority);
+   void *param, size_t stackSize, int_t priority);
 
 void osDeleteTask(OsTask *task);
 void osDelayTask(systime_t delay);

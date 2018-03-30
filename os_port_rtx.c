@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -72,7 +72,7 @@ void osStartKernel(OsInitTaskCode task)
  * @param[out] task Pointer to the task structure
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] params A pointer to a variable to be passed to the task
+ * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
@@ -81,11 +81,11 @@ void osStartKernel(OsInitTaskCode task)
  **/
 
 bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *params, void *stack, size_t stackSize, int_t priority)
+   void *param, void *stack, size_t stackSize, int_t priority)
 {
    //Create a new task
    task->tid = os_tsk_create_user_ex(taskCode, priority,
-      stack, stackSize * sizeof(uint_t), params);
+      stack, stackSize * sizeof(uint_t), param);
 
    //Check task identifier
    if(task->tid != 0)
@@ -99,7 +99,7 @@ bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
  * @brief Create a new task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] params A pointer to a variable to be passed to the task
+ * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
  * @return If the function succeeds, the return value is a pointer to the
@@ -107,7 +107,7 @@ bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
  **/
 
 OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *params, size_t stackSize, int_t priority)
+   void *param, size_t stackSize, int_t priority)
 {
    uint_t i;
    OsTask *task = NULL;
@@ -127,7 +127,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    if(i < OS_PORT_MAX_TASKS)
    {
       //Create a new task
-      taskTable[i].tid = os_tsk_create_ex(taskCode, priority, params);
+      taskTable[i].tid = os_tsk_create_ex(taskCode, priority, param);
 
       //Check whether the task was successfully created
       if(taskTable[i].tid != 0)

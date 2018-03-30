@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -81,7 +81,7 @@ void osStartKernel(void)
  * @param[out] task Pointer to the task structure
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] params A pointer to a variable to be passed to the task
+ * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
@@ -90,7 +90,7 @@ void osStartKernel(void)
  **/
 
 bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *params, void *stack, size_t stackSize, int_t priority)
+   void *param, void *stack, size_t stackSize, int_t priority)
 {
    OS_ERR err;
    CPU_STK stackLimit;
@@ -99,7 +99,7 @@ bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
    stackLimit = stackSize / 10;
 
    //Create a new task
-   OSTaskCreate(task, (CPU_CHAR *) name, taskCode, params,
+   OSTaskCreate(task, (CPU_CHAR *) name, taskCode, param,
       priority, stack, stackLimit, stackSize, 0, 1, NULL,
       OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
 
@@ -115,7 +115,7 @@ bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
  * @brief Create a new task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] params A pointer to a variable to be passed to the task
+ * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
  * @return If the function succeeds, the return value is a pointer to the
@@ -123,7 +123,7 @@ bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
  **/
 
 OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *params, size_t stackSize, int_t priority)
+   void *param, size_t stackSize, int_t priority)
 {
    OS_ERR err;
    CPU_INT32U i;
@@ -161,7 +161,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
          if(stack != NULL)
          {
             //Create a new task
-            OSTaskCreate(task, (CPU_CHAR *) name, taskCode, params,
+            OSTaskCreate(task, (CPU_CHAR *) name, taskCode, param,
                priority, stack, stackLimit, stackSize, 0, 1, NULL,
                OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
 
