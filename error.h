@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _ERROR_H
@@ -196,6 +196,7 @@ typedef enum
    ERROR_NOT_ON_LINK,
    ERROR_USE_MULTICAST,
    ERROR_NAK_RECEIVED,
+   ERROR_EXCEPTION_RECEIVED,
 
    ERROR_NO_CARRIER,
 
@@ -252,6 +253,11 @@ typedef enum
    ERROR_UNSUPPORTED_SECURITY_LEVEL,
    ERROR_NOT_IN_TIME_WINDOW,
    ERROR_AUTHORIZATION_FAILED,
+
+   ERROR_INVALID_FUNCTION_CODE,
+   ERROR_DEVICE_BUSY,
+
+   ERROR_REQUEST_REJECTED,
 
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH
