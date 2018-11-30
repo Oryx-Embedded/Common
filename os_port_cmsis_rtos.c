@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -41,7 +41,6 @@
 
 void osInitKernel(void)
 {
-//Check CMSIS-RTOS API version
 #if (osCMSIS >= 0x10001)
    //Initialize the kernel
    osKernelInitialize();
@@ -55,7 +54,6 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-//Check CMSIS-RTOS API version
 #if (osCMSIS >= 0x10001)
    //Start the kernel
    osKernelStart();
@@ -83,11 +81,22 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    osThreadId threadId;
    osThreadDef_t threadDef;
 
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    threadDef.pthread = (os_pthread) taskCode;
    threadDef.tpriority = (osPriority) priority;
    threadDef.instances = 1;
    threadDef.stacksize = stackSize * sizeof(uint_t);
+#elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
+   threadDef.pthread = (os_pthread) taskCode;
+   threadDef.attr.name = name;
+   threadDef.attr.attr_bits = 0;
+   threadDef.attr.cb_mem = NULL;
+   threadDef.attr.cb_size = 0;
+   threadDef.attr.stack_mem = NULL;
+   threadDef.attr.stack_size = stackSize * sizeof(uint_t);
+   threadDef.attr.priority = (osPriority_t) priority;
+   threadDef.attr.tz_module = 0;
+   threadDef.attr.reserved = 0;
 #elif defined(osCMSIS_FreeRTOS)
    threadDef.pthread = (os_pthread) taskCode;
    threadDef.attr.name = name;
@@ -121,10 +130,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
 
 void osDeleteTask(OsTask *task)
 {
-#if defined(osCMSIS_RTX)
-   //Delete the specified thread
-   osThreadTerminate((osThreadId) task);
-#elif defined(osCMSIS_FreeRTOS)
+#if (osCMSIS >= 0x20000)
    //Delete the specified thread
    if(task == NULL)
       osThreadExit();
@@ -209,8 +215,13 @@ bool_t osCreateEvent(OsEvent *event)
 {
    osSemaphoreDef_t semaphoreDef;
 
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    semaphoreDef.semaphore = event->cb;
+#elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
+   semaphoreDef.name = NULL;
+   semaphoreDef.attr_bits = 0;
+   semaphoreDef.cb_mem = NULL;
+   semaphoreDef.cb_size = 0;
 #elif defined(osCMSIS_FreeRTOS)
    semaphoreDef.name = NULL;
    semaphoreDef.attr_bits = 0;
@@ -274,7 +285,7 @@ void osSetEvent(OsEvent *event)
 
 void osResetEvent(OsEvent *event)
 {
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    //Force the specified event to the nonsignaled state
    while(osSemaphoreWait(event->id, 0) > 0);
 #else
@@ -305,7 +316,7 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
    }
    else
    {
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
       systime_t n;
 
       //Loop until the assigned time period has elapsed
@@ -326,7 +337,7 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 #endif
    }
 
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    //Check return value
    if(ret > 0)
    {
@@ -341,6 +352,12 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
       //The timeout interval elapsed
       return FALSE;
    }
+#elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
+   //Check return value
+   if(ret > 0)
+      return TRUE;
+   else
+      return FALSE;
 #elif defined(osCMSIS_FreeRTOS)
    //Check return value
    if(ret > 0)
@@ -387,8 +404,13 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
    osSemaphoreDef_t semaphoreDef;
 
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    semaphoreDef.semaphore = semaphore->cb;
+#elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
+   semaphoreDef.name = NULL;
+   semaphoreDef.attr_bits = 0;
+   semaphoreDef.cb_mem = NULL;
+   semaphoreDef.cb_size = 0;
 #elif defined(osCMSIS_FreeRTOS)
    semaphoreDef.name = NULL;
    semaphoreDef.attr_bits = 0;
@@ -445,7 +467,7 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
    }
    else
    {
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
       systime_t n;
 
       //Loop until the assigned time period has elapsed
@@ -505,8 +527,13 @@ bool_t osCreateMutex(OsMutex *mutex)
 {
    osMutexDef_t mutexDef;
 
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    mutexDef.mutex = mutex->cb;
+#elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
+   mutexDef.name = NULL;
+   mutexDef.attr_bits = 0;
+   mutexDef.cb_mem = NULL;
+   mutexDef.cb_size = 0;
 #elif defined(osCMSIS_FreeRTOS)
    mutexDef.name = NULL;
    mutexDef.attr_bits = 0;
@@ -576,12 +603,14 @@ systime_t osGetSystemTime(void)
 {
    systime_t time;
 
-#if defined(osCMSIS_RTX)
+#if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    //Forward function declaration
    extern uint32_t rt_time_get(void);
 
    //Get current tick count
    time = rt_time_get();
+#elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
+   time = osKernelGetTickCount();
 #elif defined(osCMSIS_FreeRTOS)
    time = osKernelGetTickCount();
 #else

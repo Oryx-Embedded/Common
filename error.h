@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _ERROR_H
@@ -218,6 +218,7 @@ typedef enum
    ERROR_UPLOAD_FAILED,
 
    ERROR_INVALID_SIGNATURE,
+   ERROR_INVALID_TICKET,
 
    ERROR_BAD_RECORD_MAC,
    ERROR_RECORD_OVERFLOW,
@@ -230,6 +231,7 @@ typedef enum
    ERROR_DECODING_FAILED,
    ERROR_DECRYPTION_FAILED,
    ERROR_ILLEGAL_PARAMETER,
+   ERROR_MISSING_EXTENSION,
    ERROR_UNSUPPORTED_EXTENSION,
    ERROR_INAPPROPRIATE_FALLBACK,
    ERROR_NO_APPLICATION_PROTOCOL,

@@ -21,7 +21,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Dependencies
@@ -48,7 +48,7 @@ char_t *strDuplicate(const char_t *s)
    //Allocate memory to hold the new string
    p = osAllocMem(n);
    //Failed to allocate memory?
-   if(!p)
+   if(p == NULL)
       return NULL;
 
    //Make a copy of the input string
@@ -71,7 +71,11 @@ char_t *strTrimWhitespace(char_t *s)
    char_t *result;
 
    //Trim whitespace from the beginning
-   while(isspace((uint8_t) *s)) s++;
+   while(isspace((uint8_t) *s))
+   {
+      s++;
+   }
+
    //Save the current position
    result = s;
 
@@ -135,6 +139,9 @@ void strReplaceChar(char_t *s, char_t oldChar, char_t newChar)
       //Remplace all occurrences of the specified character
       if(*s == oldChar)
          *s = newChar;
+
+      //Next character
+      s++;
    }
 }
 
