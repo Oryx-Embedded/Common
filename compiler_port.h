@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -108,6 +110,7 @@ typedef uint32_t systime_t;
    #define __start_packed
    #undef __end_packed
    #define __end_packed __attribute__((__packed__))
+   #define __weak __attribute__((weak))
 //Keil MDK-ARM compiler?
 #elif defined(__CC_ARM)
    #pragma anon_unions
@@ -127,12 +130,13 @@ typedef uint32_t systime_t;
    #define __start_packed
    #undef __end_packed
    #define __end_packed
+   #define __weak
 //TI ARM C compiler?
 #elif defined(__TI_ARM__)
    #undef __start_packed
    #define __start_packed
    #undef __end_packed
-   #define __end_packed __attribute__((__packed__))
+   #define __weak
 //Win32 compiler?
 #elif defined(_WIN32)
    #undef interface
@@ -140,6 +144,7 @@ typedef uint32_t systime_t;
    #define __start_packed
    #undef __end_packed
    #define __end_packed
+   #define __weak
 #endif
 
 //C++ guard
