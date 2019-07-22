@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Dependencies
@@ -44,17 +44,25 @@ char_t *strDuplicate(const char_t *s)
    uint_t n;
    char_t *p;
 
-   //Calculate the length occupied by the input string
-   n = strlen(s) + 1;
+   //Pointer to the newly created string
+   p = NULL;
 
-   //Allocate memory to hold the new string
-   p = osAllocMem(n);
-   //Failed to allocate memory?
-   if(p == NULL)
-      return NULL;
+   //Valid string?
+   if(s != NULL)
+   {
+      //Calculate the length occupied by the input string
+      n = strlen(s) + 1;
 
-   //Make a copy of the input string
-   memcpy(p, s, n);
+      //Allocate memory to hold the new string
+      p = osAllocMem(n);
+
+      //Successful memory allocation?
+      if(p != NULL)
+      {
+         //Make a copy of the input string
+         memcpy(p, s, n);
+      }
+   }
 
    //Return a pointer to the newly created string
    return p;

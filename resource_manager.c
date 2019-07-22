@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Dependencies
@@ -33,10 +33,10 @@
 #include "debug.h"
 
 //Resource data
-extern uint8_t res[];
+extern const uint8_t res[];
 
 
-error_t resGetData(const char_t *path, uint8_t **data, size_t *length)
+error_t resGetData(const char_t *path, const uint8_t **data, size_t *length)
 {
    bool_t found;
    bool_t match;

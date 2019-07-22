@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _OS_PORT_UCOS2_H
@@ -59,10 +59,11 @@
    #define OS_SYSTICKS_TO_MS(n) (n)
 #endif
 
-//Enter interrupt service routine
+//Task prologue
+#define osEnterTask()
+//Interrupt service routine prologue
 #define osEnterIsr() OSIntEnter()
-
-//Leave interrupt service routine
+//Interrupt service routine epilogue
 #define osExitIsr(flag) OSIntExit()
 
 //C++ guard

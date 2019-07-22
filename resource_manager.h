@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _RESOURCE_MANAGER_H
@@ -112,7 +112,7 @@ typedef struct
 
 
 //Resource management
-error_t resGetData(const char_t *path, uint8_t **data, size_t *length);
+error_t resGetData(const char_t *path, const uint8_t **data, size_t *length);
 
 error_t resSearchFile(const char_t *path, DirEntry *dirEntry);
 

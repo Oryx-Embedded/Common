@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -51,12 +51,15 @@ typedef uint32_t systime_t;
 
 #if defined(__linux__)
    #define PRIuSIZE "zu"
+   #define PRIXSIZE "zX"
    #define PRIuTIME "lu"
 #elif defined(_WIN32)
    #define PRIuSIZE "Iu"
+   #define PRIXSIZE "IX"
    #define PRIuTIME "lu"
 #elif defined(__XC32)
    #define PRIuSIZE "u"
+   #define PRIXSIZE "X"
    #define PRIuTIME "u"
 #elif defined(__CWCC__)
    #define PRIu8 "u"
@@ -69,9 +72,11 @@ typedef uint32_t systime_t;
    #define PRIX16 "X"
    #define PRIX32 "X"
    #define PRIuSIZE "u"
+   #define PRIXSIZE "X"
    #define PRIuTIME "u"
 #else
    #define PRIuSIZE "u"
+   #define PRIXSIZE "X"
    #define PRIuTIME "lu"
 #endif
 
