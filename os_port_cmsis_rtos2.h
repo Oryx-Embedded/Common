@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _OS_PORT_CMSIS_RTOS2_H
@@ -65,7 +65,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -82,9 +82,12 @@ typedef void OsTask;
 
 typedef struct
 {
-   osSemaphoreId_t id;
+   osEventFlagsId_t id;
 #if defined(os_CMSIS_RTX)
-   os_semaphore_t cb;
+   os_event_flags_t cb;
+#endif
+#if defined(osRtxVersionKernel)
+   osRtxEventFlags_t cb;
 #endif
 } OsEvent;
 
@@ -99,6 +102,9 @@ typedef struct
 #if defined(os_CMSIS_RTX)
    os_semaphore_t cb;
 #endif
+#if defined(osRtxVersionKernel)
+   osRtxSemaphore_t cb;
+#endif
 } OsSemaphore;
 
 
@@ -111,6 +117,9 @@ typedef struct
    osMutexId_t id;
 #if defined(os_CMSIS_RTX)
    os_mutex_t cb;
+#endif
+#if defined(osRtxVersionKernel)
+   osRtxMutex_t cb;
 #endif
 } OsMutex;
 
@@ -165,7 +174,7 @@ void osFreeMem(void *p);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

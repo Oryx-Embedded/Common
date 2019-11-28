@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _PATH_H
@@ -34,7 +34,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 //Path manipulation helper functions
@@ -54,7 +54,7 @@ bool_t pathMatch(const char_t *path, const char_t *pattern);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

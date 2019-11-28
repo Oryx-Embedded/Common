@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _FS_PORT_H
@@ -35,20 +35,6 @@
 #include "date_time.h"
 #include "error.h"
 
-//Number of files that can be opened simultaneously
-#ifndef FS_MAX_FILES
-   #define FS_MAX_FILES 8
-#elif (FS_MAX_FILES < 1)
-   #error FS_MAX_FILES parameter is not valid
-#endif
-
-//Number of directories that can be opened simultaneously
-#ifndef FS_MAX_DIRS
-   #define FS_MAX_DIRS 8
-#elif (FS_MAX_DIRS < 1)
-   #error FS_MAX_DIRS parameter is not valid
-#endif
-
 //Maximum filename length
 #ifndef FS_MAX_NAME_LEN
    #define FS_MAX_NAME_LEN 127
@@ -58,7 +44,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -115,45 +101,26 @@ typedef struct
 } FsDirEntry;
 
 
-/**
- * @brief File handle
- **/
-
-typedef void FsFile;
-
-
-/**
- * @brief Directory handle
- **/
-
-typedef void FsDir;
-
-
-//File system abstraction layer
-error_t fsInit(void);
-
-bool_t fsFileExists(const char_t *path);
-error_t fsGetFileSize(const char_t *path, uint32_t *size);
-error_t fsRenameFile(const char_t *oldPath, const char_t *newPath);
-error_t fsDeleteFile(const char_t *path);
-
-FsFile *fsOpenFile(const char_t *path, uint_t mode);
-error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin);
-error_t fsWriteFile(FsFile *file, void *data, size_t length);
-error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length);
-void fsCloseFile(FsFile *file);
-
-bool_t fsDirExists(const char_t *path);
-error_t fsCreateDir(const char_t *path);
-error_t fsRemoveDir(const char_t *path);
-
-FsDir *fsOpenDir(const char_t *path);
-error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry);
-void fsCloseDir(FsDir *dir);
+//FatFs port?
+#if defined(USE_FATFS)
+   #include "fs_port_fatfs.h"
+//SPIFFS port?
+#elif defined(USE_SPIFFS)
+   #include "fs_port_spiffs.h"
+//Windows port?
+#elif defined(_WIN32)
+   #include "fs_port_posix.h"
+//POSIX port?
+#elif defined(__linux__) || defined(__FreeBSD__)
+   #include "fs_port_posix.h"
+//Custom port?
+#elif defined(USE_CUSTOM_FS)
+   #include "fs_port_custom.h"
+#endif
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _OS_PORT_FREERTOS_H
@@ -85,9 +85,14 @@
    #define osExitIsr(flag)
 #endif
 
+//Static object allocation
+#ifndef configSUPPORT_STATIC_ALLOCATION
+   #define configSUPPORT_STATIC_ALLOCATION 0
+#endif
+
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -105,7 +110,10 @@
 
 typedef struct
 {
-   xSemaphoreHandle handle;
+   SemaphoreHandle_t handle;
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   StaticSemaphore_t buffer;
+#endif
 } OsEvent;
 
 
@@ -115,7 +123,10 @@ typedef struct
 
 typedef struct
 {
-   xSemaphoreHandle handle;
+   SemaphoreHandle_t handle;
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   StaticSemaphore_t buffer;
+#endif
 } OsSemaphore;
 
 
@@ -125,7 +136,10 @@ typedef struct
 
 typedef struct
 {
-   xSemaphoreHandle handle;
+   SemaphoreHandle_t handle;
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   StaticSemaphore_t buffer;
+#endif
 } OsMutex;
 
 
@@ -179,7 +193,7 @@ void osFreeMem(void *p);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -72,11 +72,11 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    void *param, size_t stackSize, int_t priority)
 {
    portBASE_TYPE status;
-   xTaskHandle task = NULL;
+   TaskHandle_t task = NULL;
 
    //Create a new task
-   status = xTaskCreate((pdTASK_CODE) taskCode,
-      name, stackSize, param, priority, &task);
+   status = xTaskCreate((TaskFunction_t) taskCode, name, stackSize, param,
+      priority, &task);
 
    //Check whether the task was successfully created
    if(status == pdPASS)
@@ -94,7 +94,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
 void osDeleteTask(OsTask *task)
 {
    //Delete the specified task
-   vTaskDelete((xTaskHandle) task);
+   vTaskDelete((TaskHandle_t) task);
 }
 
 
@@ -160,22 +160,19 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
    //Create a binary semaphore
-   vSemaphoreCreateBinary(event->handle);
+   event->handle = xSemaphoreCreateBinaryStatic(&event->buffer);
+#else
+   //Create a binary semaphore
+   event->handle = xSemaphoreCreateBinary();
+#endif
 
    //Check whether the returned handle is valid
    if(event->handle != NULL)
-   {
-      //Force the event to the nonsignaled state
-      xSemaphoreTake(event->handle, 0);
-      //Event successfully created
       return TRUE;
-   }
    else
-   {
-      //Failed to create event object
       return FALSE;
-   }
 }
 
 
@@ -278,8 +275,14 @@ bool_t osSetEventFromIsr(OsEvent *event)
 
 bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   //Create a semaphore
+   semaphore->handle = xSemaphoreCreateCountingStatic(count, count,
+      &semaphore->buffer);
+#else
    //Create a semaphore
    semaphore->handle = xSemaphoreCreateCounting(count, count);
+#endif
 
    //Check whether the returned handle is valid
    if(semaphore->handle != NULL)
@@ -355,8 +358,13 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   //Create a mutex object
+   mutex->handle = xSemaphoreCreateMutexStatic(&mutex->buffer);
+#else
    //Create a mutex object
    mutex->handle = xSemaphoreCreateMutex();
+#endif
 
    //Check whether the returned handle is valid
    if(mutex->handle != NULL)

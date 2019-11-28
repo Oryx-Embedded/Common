@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _ERROR_H
@@ -31,7 +31,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -230,6 +230,7 @@ typedef enum
    ERROR_BAD_CERTIFICATE,
    ERROR_UNSUPPORTED_CERTIFICATE,
    ERROR_CERTIFICATE_EXPIRED,
+   ERROR_CERTIFICATE_REVOKED,
    ERROR_UNKNOWN_CA,
    ERROR_DECODING_FAILED,
    ERROR_DECRYPTION_FAILED,
@@ -269,13 +270,16 @@ typedef enum
    ERROR_UNKNOWN_REQUEST,
    ERROR_FLOW_CONTROL,
 
+   ERROR_INVALID_PASSWORD,
+   ERROR_INVALID_HANDLE,
+
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH
 } error_t;
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -36,7 +36,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 //Types
@@ -141,6 +141,7 @@ typedef uint32_t systime_t;
    #undef __start_packed
    #define __start_packed
    #undef __end_packed
+   #define __end_packed __attribute__((__packed__))
    #define __weak
 //Win32 compiler?
 #elif defined(_WIN32)
@@ -154,7 +155,7 @@ typedef uint32_t systime_t;
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

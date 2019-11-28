@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -171,22 +171,25 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
-   osSemaphoreAttr_t semaphoreAttr;
+   osEventFlagsAttr_t eventFlagsAttr;
 
-   //Set semaphore attributes
-   semaphoreAttr.name = NULL;
-   semaphoreAttr.attr_bits = 0;
+   //Set event flags attributes
+   eventFlagsAttr.name = NULL;
+   eventFlagsAttr.attr_bits = 0;
 
 #if defined(os_CMSIS_RTX)
-   semaphoreAttr.cb_mem = &event->cb;
-   semaphoreAttr.cb_size = sizeof(os_semaphore_t);
+   eventFlagsAttr.cb_mem = &event->cb;
+   eventFlagsAttr.cb_size = sizeof(os_event_flags_t);
+#elif defined(osRtxVersionKernel)
+   eventFlagsAttr.cb_mem = &event->cb;
+   eventFlagsAttr.cb_size = sizeof(osRtxEventFlags_t);
 #else
-   semaphoreAttr.cb_mem = NULL;
-   semaphoreAttr.cb_size = 0;
+   eventFlagsAttr.cb_mem = NULL;
+   eventFlagsAttr.cb_size = 0;
 #endif
 
-   //Create a binary semaphore object
-   event->id = osSemaphoreNew(1, 0, &semaphoreAttr);
+   //Create an event flags object
+   event->id = osEventFlagsNew(&eventFlagsAttr);
 
    //Check whether the returned semaphore ID is valid
    if(event->id != NULL)
@@ -203,11 +206,11 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   //Make sure the semaphore ID is valid
+   //Make sure the event flags ID is valid
    if(event->id != NULL)
    {
-      //Properly dispose the event object
-      osSemaphoreDelete(event->id);
+      //Properly dispose the event flags object
+      osEventFlagsDelete(event->id);
    }
 }
 
@@ -220,7 +223,7 @@ void osDeleteEvent(OsEvent *event)
 void osSetEvent(OsEvent *event)
 {
    //Set the specified event to the signaled state
-   osSemaphoreRelease(event->id);
+   osEventFlagsSet(event->id, 1);
 }
 
 
@@ -232,7 +235,7 @@ void osSetEvent(OsEvent *event)
 void osResetEvent(OsEvent *event)
 {
    //Force the specified event to the nonsignaled state
-   osSemaphoreAcquire(event->id, 0);
+   osEventFlagsClear(event->id, 1);
 }
 
 
@@ -246,23 +249,24 @@ void osResetEvent(OsEvent *event)
 
 bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
-   osStatus_t status;
+   uint32_t flags;
 
-   //Wait until the specified event is in the signaled
-   //state or the timeout interval elapses
+   //Wait until the specified event is in the signaled state or the timeout
+   //interval elapses
    if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      status = osSemaphoreAcquire(event->id, osWaitForever);
+      flags = osEventFlagsWait(event->id, 1, osFlagsWaitAny, osWaitForever);
    }
    else
    {
       //Wait for the specified time interval
-      status = osSemaphoreAcquire(event->id, OS_MS_TO_SYSTICKS(timeout));
+      flags = osEventFlagsWait(event->id, 1, osFlagsWaitAny,
+         OS_MS_TO_SYSTICKS(timeout));
    }
 
-   //Check return value
-   if(status == osOK)
+   //The function returns the event flags before clearing or an error code
+   if(flags == 1)
       return TRUE;
    else
       return FALSE;
@@ -279,7 +283,7 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 bool_t osSetEventFromIsr(OsEvent *event)
 {
    //Set the specified event to the signaled state
-   osSemaphoreRelease(event->id);
+   osEventFlagsSet(event->id, 1);
 
    //The return value is not relevant
    return FALSE;
@@ -306,6 +310,9 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 #if defined(os_CMSIS_RTX)
    semaphoreAttr.cb_mem = &semaphore->cb;
    semaphoreAttr.cb_size = sizeof(os_semaphore_t);
+#elif defined(osRtxVersionKernel)
+   semaphoreAttr.cb_mem = &semaphore->cb;
+   semaphoreAttr.cb_size = sizeof(osRtxSemaphore_t);
 #else
    semaphoreAttr.cb_mem = NULL;
    semaphoreAttr.cb_size = 0;
@@ -400,6 +407,9 @@ bool_t osCreateMutex(OsMutex *mutex)
 #if defined(os_CMSIS_RTX)
    mutexAttr.cb_mem = &mutex->cb;
    mutexAttr.cb_size = sizeof(os_mutex_t);
+#elif defined(osRtxVersionKernel)
+   mutexAttr.cb_mem = &mutex->cb;
+   mutexAttr.cb_size = sizeof(osRtxMutex_t);
 #else
    mutexAttr.cb_mem = NULL;
    mutexAttr.cb_size = 0;

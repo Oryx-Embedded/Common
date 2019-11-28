@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _OS_PORT_EMBOS_H
@@ -68,7 +68,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -153,7 +153,7 @@ void osFreeMem(void *p);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

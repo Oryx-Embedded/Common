@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _OS_PORT_H
@@ -93,6 +93,9 @@
 //FreeRTOS port?
 #elif defined(USE_FREERTOS)
    #include "os_port_freertos.h"
+//SafeRTOS port?
+#elif defined(USE_SAFERTOS)
+   #include "os_port_safertos.h"
 //Keil RTX port?
 #elif defined(USE_RTX)
    #include "os_port_rtx.h"

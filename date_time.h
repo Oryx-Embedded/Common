@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _DATE_TIME_H
@@ -35,7 +35,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -72,7 +72,7 @@ uint8_t computeDayOfWeek(uint16_t y, uint8_t m, uint8_t d);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

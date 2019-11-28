@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _CPU_ENDIAN_H
@@ -434,7 +434,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 //Byte order conversion functions
@@ -451,7 +451,7 @@ uint64_t reverseInt64(uint64_t value);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

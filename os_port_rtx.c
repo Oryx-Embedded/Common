@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -86,8 +86,8 @@ bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
    void *param, void *stack, size_t stackSize, int_t priority)
 {
    //Create a new task
-   task->tid = os_tsk_create_user_ex(taskCode, priority,
-      stack, stackSize * sizeof(uint_t), param);
+   task->tid = os_tsk_create_user_ex(taskCode, priority, stack,
+      stackSize * sizeof(uint_t), param);
 
    //Check task identifier
    if(task->tid != 0)

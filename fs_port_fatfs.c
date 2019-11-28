@@ -23,17 +23,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Dependencies
 #include <string.h>
 #include "fs_port.h"
+#include "fs_port_fatfs.h"
 #include "error.h"
 #include "debug.h"
-
-//FatFs specific headers
-#include "ff.h"
 
 //FatFs revision
 #define FATFS_R(major, minor, patch) ((major << 16) | (minor << 8) | (0x ## patch))
@@ -485,12 +483,12 @@ error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length)
    UINT n;
    FRESULT res;
 
+   //Check parameters
+   if(file == NULL || length == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //No data has been read yet
    *length = 0;
-
-   //Make sure the file pointer is valid
-   if(file == NULL)
-      return ERROR_INVALID_PARAMETER;
 
 #if ((FATFS_REVISON <= FATFS_R(0, 12, c) && _FS_REENTRANT == 0) || \
    (FATFS_REVISON >= FATFS_R(0, 13, 0) && FF_FS_REENTRANT == 0))
@@ -786,12 +784,12 @@ error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry)
    dirEntry->attributes = fno.fattrib;
    //File size
    dirEntry->size = fno.fsize;
-   //Last modified date
+
+   //Time of last modification
    dirEntry->modified.year = 1980 + ((fno.fdate >> 9) & 0x7F);
    dirEntry->modified.month = (fno.fdate >> 5) & 0x0F;
    dirEntry->modified.day = fno.fdate & 0x1F;
    dirEntry->modified.dayOfWeek = 0;
-   //Last modified time
    dirEntry->modified.hours = (fno.ftime >> 11) & 0x1F;
    dirEntry->modified.minutes = (fno.ftime >> 5) & 0x3F;
    dirEntry->modified.seconds = (fno.ftime & 0x1F) * 2;
