@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Dependencies
@@ -51,7 +51,7 @@ char_t *strDuplicate(const char_t *s)
    if(s != NULL)
    {
       //Calculate the length occupied by the input string
-      n = strlen(s) + 1;
+      n = osStrlen(s) + 1;
 
       //Allocate memory to hold the new string
       p = osAllocMem(n);
@@ -60,7 +60,7 @@ char_t *strDuplicate(const char_t *s)
       if(p != NULL)
       {
          //Make a copy of the input string
-         memcpy(p, s, n);
+         osMemcpy(p, s, n);
       }
    }
 
@@ -173,12 +173,12 @@ error_t strSafeCopy(char_t *dest, const char_t *src, size_t destSize)
       return ERROR_INVALID_PARAMETER;
 
    //Get the length of the source name
-   n = strlen(src);
+   n = osStrlen(src);
    //Limit the number of characters to be copied
    n = MIN(n, destSize - 1);
 
    //Copy the string
-   strncpy(dest, src, n);
+   osStrncpy(dest, src, n);
    //Properly terminate the string with a NULL character
    dest[n] = '\0';
 

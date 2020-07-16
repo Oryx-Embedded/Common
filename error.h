@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _ERROR_H
@@ -100,6 +100,7 @@ typedef enum
    ERROR_INVALID_PROTOCOL,
    ERROR_INVALID_STATUS,
    ERROR_INVALID_ADDRESS,
+   ERROR_INVALID_PORT,
    ERROR_INVALID_MESSAGE,
    ERROR_INVALID_KEY,
    ERROR_INVALID_KEY_LENGTH,
@@ -219,6 +220,7 @@ typedef enum
    ERROR_WRITE_FAILED,
    ERROR_READ_FAILED,
    ERROR_UPLOAD_FAILED,
+   ERROR_READ_ONLY_ACCESS,
 
    ERROR_INVALID_SIGNATURE,
    ERROR_INVALID_TICKET,
@@ -229,6 +231,7 @@ typedef enum
    ERROR_NO_CERTIFICATE,
    ERROR_BAD_CERTIFICATE,
    ERROR_UNSUPPORTED_CERTIFICATE,
+   ERROR_UNKNOWN_CERTIFICATE,
    ERROR_CERTIFICATE_EXPIRED,
    ERROR_CERTIFICATE_REVOKED,
    ERROR_UNKNOWN_CA,
@@ -272,6 +275,18 @@ typedef enum
 
    ERROR_INVALID_PASSWORD,
    ERROR_INVALID_HANDLE,
+   ERROR_BAD_NONCE,
+   ERROR_UNEXPECTED_STATUS,
+   ERROR_RESPONSE_TOO_LARGE,
+
+   ERROR_INVALID_SESSION,
+   ERROR_TICKET_EXPIRED,
+
+   ERROR_INVALID_ENTRY,
+   ERROR_TABLE_FULL,
+   ERROR_END_OF_TABLE,
+
+   ERROR_ALREADY_RUNNING,
 
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _OS_PORT_FREERTOS_H
@@ -66,23 +66,27 @@
 #endif
 
 //Interrupt service routine prologue
-#if defined(portENTER_SWITCHING_ISR)
-   #define osEnterIsr() portENTER_SWITCHING_ISR()
-#else
-   #define osEnterIsr()
+#ifndef osEnterIsr
+   #if defined(portENTER_SWITCHING_ISR)
+      #define osEnterIsr() portENTER_SWITCHING_ISR()
+   #else
+      #define osEnterIsr()
+   #endif
 #endif
 
 //Interrupt service routine epilogue
-#if defined(__XTENSA__)
-   #define osExitIsr(flag) if(flag) portYIELD_FROM_ISR()
-#elif defined(portEXIT_SWITCHING_ISR)
-   #define osExitIsr(flag) portEXIT_SWITCHING_ISR()
-#elif defined(portEND_SWITCHING_ISR)
-   #define osExitIsr(flag) portEND_SWITCHING_ISR(flag)
-#elif defined(portYIELD_FROM_ISR)
-   #define osExitIsr(flag) portYIELD_FROM_ISR(flag)
-#else
-   #define osExitIsr(flag)
+#ifndef osExitIsr
+   #if defined(__XTENSA__)
+      #define osExitIsr(flag) if(flag) portYIELD_FROM_ISR()
+   #elif defined(portEXIT_SWITCHING_ISR)
+      #define osExitIsr(flag) portEXIT_SWITCHING_ISR()
+   #elif defined(portEND_SWITCHING_ISR)
+      #define osExitIsr(flag) portEND_SWITCHING_ISR(flag)
+   #elif defined(portYIELD_FROM_ISR)
+      #define osExitIsr(flag) portYIELD_FROM_ISR(flag)
+   #else
+      #define osExitIsr(flag)
+   #endif
 #endif
 
 //Static object allocation

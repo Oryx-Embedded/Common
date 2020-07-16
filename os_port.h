@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _OS_PORT_H
@@ -120,6 +120,114 @@
 //POSIX Threads port?
 #elif defined(__linux__) || defined(__FreeBSD__)
    #include "os_port_posix.h"
+#endif
+
+//Fill block of memory
+#ifndef osMemset
+   #include <string.h>
+   #define osMemset(p, value, length) (void) memset(p, value, length)
+#endif
+
+//Copy block of memory
+#ifndef osMemcpy
+   #include <string.h>
+   #define osMemcpy(dest, src, length) (void) memcpy(dest, src, length)
+#endif
+
+//Move block of memory
+#ifndef osMemmove
+   #include <string.h>
+   #define osMemmove(dest, src, length) (void) memmove(dest, src, length)
+#endif
+
+//Compare two blocks of memory
+#ifndef osMemcmp
+   #include <string.h>
+   #define osMemcmp(p1, p2, length) memcmp(p1, p2, length)
+#endif
+
+//Get string length
+#ifndef osStrlen
+   #include <string.h>
+   #define osStrlen(s) strlen(s)
+#endif
+
+//Compare strings
+#ifndef osStrcmp
+   #include <stdio.h>
+   #define osStrcmp(s1, s2) strcmp(s1, s2)
+#endif
+
+//Compare substrings
+#ifndef osStrncmp
+   #include <stdio.h>
+   #define osStrncmp(s1, s2, length) strncmp(s1, s2, length)
+#endif
+
+//Compare strings without case
+#ifndef osStrcasecmp
+   #include <stdio.h>
+   #define osStrcasecmp(s1, s2) strcasecmp(s1, s2)
+#endif
+
+//Copy string
+#ifndef osStrcpy
+   #include <string.h>
+   #define osStrcpy(s1, s2) (void) strcpy(s1, s2)
+#endif
+
+//Copy characters from string
+#ifndef osStrncpy
+   #include <string.h>
+   #define osStrncpy(s1, s2, length) (void) strncpy(s1, s2, length)
+#endif
+
+//Extract tokens from string
+#ifndef osStrtok_r
+   #include <string.h>
+   #define osStrtok_r(s, delim, last) strtok_r(s, delim, last)
+#endif
+
+//Format string
+#ifndef osSprintf
+   #include <stdio.h>
+   #define osSprintf(dest, ...) sprintf(dest, __VA_ARGS__)
+#endif
+
+//Format string
+#ifndef osVsnprintf
+   #include <stdio.h>
+   #define osVsnprintf(dest, size, format, ap) vsnprintf(dest, size, format, ap)
+#endif
+
+//Convert string to unsigned long integer
+#ifndef osStrtoul
+   #include <stdlib.h>
+   #define osStrtoul(s, endptr, base) strtoul(s, endptr, base)
+#endif
+
+//Convert a character to lowercase
+#ifndef osTolower
+   #include <ctype.h>
+   #define osTolower(c) tolower((uint8_t) (c))
+#endif
+
+//Convert a character to uppercase
+#ifndef osToupper
+   #include <ctype.h>
+   #define osToupper(c) toupper((uint8_t) (c))
+#endif
+
+//Check if a character is an uppercase letter
+#ifndef osIsupper
+   #include <ctype.h>
+   #define osIsupper(c) isupper((c))
+#endif
+
+//Check if a character is a decimal digit
+#ifndef osIsdigit
+   #include <ctype.h>
+   #define osIsdigit(c) isdigit((uint8_t) (c))
 #endif
 
 //Delay routines

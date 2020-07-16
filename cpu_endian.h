@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _CPU_ENDIAN_H
@@ -41,12 +41,20 @@
    #undef HTONL
 #endif
 
+#ifdef HTONLL
+   #undef HTONLL
+#endif
+
 #ifdef htons
    #undef htons
 #endif
 
 #ifdef htonl
    #undef htonl
+#endif
+
+#ifdef htonll
+   #undef htonll
 #endif
 
 #ifdef NTOHS
@@ -57,12 +65,20 @@
    #undef NTOHL
 #endif
 
+#ifdef NTOHLL
+   #undef NTOHLL
+#endif
+
 #ifdef ntohs
    #undef ntohs
 #endif
 
 #ifdef ntohl
    #undef ntohl
+#endif
+
+#ifdef ntohll
+   #undef ntohll
 #endif
 
 #ifdef HTOLE16
@@ -342,14 +358,18 @@
 //Host byte order to network byte order
 #define HTONS(value) (value)
 #define HTONL(value) (value)
+#define HTONLL(value) (value)
 #define htons(value) ((uint16_t) (value))
 #define htonl(value) ((uint32_t) (value))
+#define htonll(value) ((uint64_t) (value))
 
 //Network byte order to host byte order
 #define NTOHS(value) (value)
 #define NTOHL(value) (value)
+#define NTOHLL(value) (value)
 #define ntohs(value) ((uint16_t) (value))
 #define ntohl(value) ((uint32_t) (value))
+#define ntohll(value) ((uint64_t) (value))
 
 //Host byte order to little-endian byte order
 #define HTOLE16(value) SWAPINT16(value)
@@ -389,14 +409,18 @@
 //Host byte order to network byte order
 #define HTONS(value) SWAPINT16(value)
 #define HTONL(value) SWAPINT32(value)
+#define HTONLL(value) SWAPINT64(value)
 #define htons(value) swapInt16((uint16_t) (value))
 #define htonl(value) swapInt32((uint32_t) (value))
+#define htonll(value) swapInt64((uint64_t) (value))
 
 //Network byte order to host byte order
 #define NTOHS(value) SWAPINT16(value)
 #define NTOHL(value) SWAPINT32(value)
+#define NTOHLL(value) SWAPINT64(value)
 #define ntohs(value) swapInt16((uint16_t) (value))
 #define ntohl(value) swapInt32((uint32_t) (value))
+#define ntohll(value) swapInt64((uint64_t) (value))
 
 //Host byte order to little-endian byte order
 #define HTOLE16(value) (value)

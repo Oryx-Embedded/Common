@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -54,8 +54,8 @@ void osInitKernel(void)
    OS_ERR err;
 
    //Initialize tables
-   memset(tcbTable, 0, sizeof(tcbTable));
-   memset(stkTable, 0, sizeof(stkTable));
+   osMemset(tcbTable, 0, sizeof(tcbTable));
+   osMemset(stkTable, 0, sizeof(stkTable));
 
    //Scheduler initialization
    OSInit(&err);

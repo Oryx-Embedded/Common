@@ -1,6 +1,6 @@
 /**
- * @file fs_port_posix.c
- * @brief File system abstraction layer (POSIX)
+ * @file fs_port_rl_fs.c
+ * @brief File system abstraction layer (RL-FlashFS)
  *
  * @section License
  *
@@ -29,13 +29,11 @@
 //Dependencies
 #include <string.h>
 #include "fs_port.h"
-#include "fs_port_posix.h"
+#include "fs_port_rl_fs.h"
 #include "str.h"
 #include "path.h"
 #include "error.h"
 #include "debug.h"
-#include <dirent.h>
-#include <direct.h>
 
 
 /**
@@ -45,69 +43,24 @@
 
 error_t fsInit(void)
 {
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Retrieve the attributes of the specified file
- * @param[in] path NULL-terminated string specifying the filename
- * @param[out] attributes File attributes (optional parameter)
- * @param[out] size Size of the file in bytes (optional parameter)
- * @param[out] modified Time of last modification (optional parameter)
- * @return Error code
- **/
-
-error_t fsGetFileAttr(const char_t *path, uint32_t *attributes,
-   uint32_t *size, DateTime *modified)
-{
    error_t error;
-   int_t ret;
-   struct stat fileStat;
+   fsStatus status;
 
-   //Make sure the pathname is valid
-   if(path == NULL)
-      return ERROR_INVALID_PARAMETER;
+   //Initialize file system
+   status = finit ("M0:");
 
-   //Get file status
-   ret = stat(path, &fileStat);
-
-   //On success, zero is returned
-   if(ret == 0)
+   //Check status code
+   if(status == fsOK)
    {
-      //File attributes
-      if(attributes != NULL)
-      {
-         //Check file attributes
-         if(S_ISDIR(fileStat.st_mode))
-            *attributes = FS_FILE_ATTR_DIRECTORY;
-         else
-            *attributes = 0;
-      }
+      //Mount drive
+      status = fmount("M0:");
+   }
 
-      //The parameter is optional
-      if(size != NULL)
-      {
-         //Save the size of the file
-         *size = fileStat.st_size;
-      }
-
-      //The parameter is optional
-      if(modified != NULL)
-      {
-         //Save the time of last modification
-         convertUnixTimeToDate(fileStat.st_mtime, modified);
-      }
-
-      //Sucessful processing
+   //On success, fsOK is returned
+   if(status == fsOK)
       error = NO_ERROR;
-   }
    else
-   {
-      //The specified file does not exist
-      error = ERROR_FILE_NOT_FOUND;
-   }
+      error = ERROR_FAILURE;
 
    //Return status code
    return error;
@@ -122,24 +75,26 @@ error_t fsGetFileAttr(const char_t *path, uint32_t *attributes,
 
 bool_t fsFileExists(const char_t *path)
 {
-   error_t error;
-   uint32_t attributes;
+   fsStatus status;
+   fsFileInfo fileInfo;
    bool_t found;
 
-   //Clear flag
+   //Initialize flag
    found = FALSE;
 
    //Make sure the pathname is valid
    if(path != NULL)
    {
-      //Retrieve the attributes of the specified file
-      error = fsGetFileAttr(path, &attributes, NULL, NULL);
+      //The fileID field must be initialized to zero
+      fileInfo.fileID = 0;
+      //Find the the specified path name
+      status = ffind(path, &fileInfo);
 
-      //Check whether the file exists
-      if(!error)
+      //Check status code
+      if(status == fsOK)
       {
          //Valid file?
-         if((attributes & FS_FILE_ATTR_DIRECTORY) == 0)
+         if((fileInfo.attrib & FS_FAT_ATTR_DIRECTORY) == 0)
          {
             found = TRUE;
          }
@@ -160,17 +115,31 @@ bool_t fsFileExists(const char_t *path)
 
 error_t fsGetFileSize(const char_t *path, uint32_t *size)
 {
-   error_t error;
+   fsStatus status;
+   fsFileInfo fileInfo;
 
    //Check parameters
    if(path == NULL || size == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve the attributes of the specified file
-   error = fsGetFileAttr(path, NULL, size, NULL);
+   //The fileID field must be initialized to zero
+   fileInfo.fileID = 0;
+   //Find the the specified path name
+   status = ffind(path, &fileInfo);
 
-   //Return status code
-   return error;
+   //Any error to report?
+   if(status != fsOK)
+      return ERROR_FAILURE;
+   
+   //Valid file?
+   if((fileInfo.attrib & FS_FAT_ATTR_DIRECTORY) != 0)
+      return ERROR_FAILURE;
+   
+   //Return the size of the file
+   *size = fileInfo.size;
+
+   //Successful processing
+   return NO_ERROR;
 }
 
 
@@ -184,17 +153,21 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
 error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 {
    error_t error;
-   int_t ret;
+   fsStatus status;
+   const char_t *newName;
 
    //Check parameters
    if(oldPath == NULL || newPath == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Rename the specified file
-   ret = rename(oldPath, newPath);
+   //Get new file name
+   newName = pathFindFileName(newPath);
 
-   //On success, zero is returned
-   if(ret == 0)
+   //Rename the specified file
+   status = frename(oldPath, newName);
+
+   //On success, fsOK is returned
+   if(status == fsOK)
       error = NO_ERROR;
    else
       error = ERROR_FAILURE;
@@ -213,17 +186,17 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 error_t fsDeleteFile(const char_t *path)
 {
    error_t error;
-   int_t ret;
+   fsStatus status;
 
    //Make sure the pathname is valid
    if(path == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Delete the specified file
-   ret = remove(path);
+   status = fdelete(path, "");
 
-   //On success, zero is returned
-   if(ret == 0)
+   //On success, fsOK is returned
+   if(status == fsOK)
       error = NO_ERROR;
    else
       error = ERROR_FAILURE;
@@ -408,23 +381,38 @@ void fsCloseFile(FsFile *file)
 
 bool_t fsDirExists(const char_t *path)
 {
-   error_t error;
-   uint32_t attributes;
+   fsStatus status;
+   fsFileInfo fileInfo;
    bool_t found;
 
-   //Clear flag
+   //Initialize flag
    found = FALSE;
 
-   //Retrieve the attributes of the specified file
-   error = fsGetFileAttr(path, &attributes, NULL, NULL);
-
-   //Check whether the file exists
-   if(!error)
+   //Make sure the pathname is valid
+   if(path != NULL)
    {
-      //Valid directory?
-      if((attributes & FS_FILE_ATTR_DIRECTORY) != 0)
+      //Root directory?
+      if(!osStrcmp(path, "/") || !osStrcmp(path, "\\"))
       {
+         //The root directory always exists
          found = TRUE;
+      }
+      else
+      {
+         //The fileID field must be initialized to zero
+         fileInfo.fileID = 0;
+         //Find the the specified path name
+         status = ffind(path, &fileInfo);
+
+         //Check status code
+         if(status == fsOK)
+         {
+            //Valid directory?
+            if((fileInfo.attrib & FS_FAT_ATTR_DIRECTORY) != 0)
+            {
+               found = TRUE;
+            }
+         }
       }
    }
 
@@ -442,17 +430,17 @@ bool_t fsDirExists(const char_t *path)
 error_t fsCreateDir(const char_t *path)
 {
    error_t error;
-   int_t ret;
+   fsStatus status;
 
    //Make sure the pathname is valid
    if(path == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Create a new directory
-   ret = _mkdir(path);
+   status = fmkdir(path);
 
-   //On success, zero is returned
-   if(ret == 0)
+   //On success, fsOK is returned
+   if(status == fsOK)
       error = NO_ERROR;
    else
       error = ERROR_FAILURE;
@@ -471,17 +459,17 @@ error_t fsCreateDir(const char_t *path)
 error_t fsRemoveDir(const char_t *path)
 {
    error_t error;
-   int_t ret;
+   fsStatus status;
 
    //Make sure the pathname is valid
    if(path == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Remove the specified directory
-   ret = _rmdir(path);
+   status = frmdir(path, "");
 
-   //On success, zero is returned
-   if(ret == 0)
+   //On success, fsOK is returned
+   if(status == fsOK)
       error = NO_ERROR;
    else
       error = ERROR_FAILURE;
@@ -504,29 +492,31 @@ FsDir *fsOpenDir(const char_t *path)
    //Valid directory path?
    if(path != NULL)
    {
-      //Allocate a memory buffer to hold the directory descriptor
-      dir = osAllocMem(sizeof(FsDir));
-
-      //Successful memory allocation?
-      if(dir != NULL)
+      //Check whether the directory exists
+      if(fsDirExists(path))
       {
-         //Open the specified directory
-         dir->handle = opendir(path);
+         //Allocate a memory buffer to hold the directory descriptor
+         dir = osAllocMem(sizeof(FsDir));
 
-         //The function returns a pointer to the directory stream. On error,
-         //NULL is returned
-         if(dir->handle != NULL)
+         //Successful memory allocation?
+         if(dir != NULL)
          {
-            //Save the directory path
-            strSafeCopy(dir->path, path, FS_MAX_PATH_LEN);
-            pathCanonicalize(dir->path);
+            //Initialize the directory descriptor
+            osMemset(dir, 0, sizeof(FsDir));
+
+            //Specify the search pattern
+            strSafeCopy(dir->pattern, path, FS_MAX_PATH_LEN);
+            pathCanonicalize(dir->pattern);
+            pathCombine(dir->pattern, "*", FS_MAX_PATH_LEN);
+
+            //Start a new search
+            dir->fileInfo.fileID = 0;
          }
-         else
-         {
-            //Clean up side effects
-            osFreeMem(dir);
-            dir = NULL;
-         }
+      }
+      else
+      {
+         //The specified directory does not exist
+         dir = NULL;
       }
    }
    else
@@ -550,10 +540,7 @@ FsDir *fsOpenDir(const char_t *path)
 error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry)
 {
    error_t error;
-   int_t ret;
-   struct dirent *entry;
-   struct stat fileStat;
-   char_t path[FS_MAX_PATH_LEN + 1];
+   fsStatus status;
 
    //Check parameters
    if(dir == NULL || dirEntry == NULL)
@@ -563,54 +550,33 @@ error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry)
    osMemset(dirEntry, 0, sizeof(FsDirEntry));
 
    //Read the specified directory
-   entry = readdir(dir->handle);
+   status = ffind(dir->pattern, &dir->fileInfo);
 
    //Valid directory entry?
-   if(entry != NULL)
+   if(status == fsOK)
    {
       //Copy the file name component
-      strSafeCopy(dirEntry->name, entry->d_name, FS_MAX_NAME_LEN);
+      strSafeCopy(dirEntry->name, dir->fileInfo.name, FS_MAX_NAME_LEN);
 
-      //Check file attributes
-      if(entry->d_type == DT_DIR)
-      {
-         dirEntry->attributes |= FS_FILE_ATTR_DIRECTORY;
-      }
+      //File attributes
+      dirEntry->attributes = dir->fileInfo.attrib;
+      //File size
+      dirEntry->size = dir->fileInfo.size;
 
-      //Get the pathname of the directory being listed
-      strSafeCopy(path, dir->path, FS_MAX_PATH_LEN);
+      //Time of last modification
+      dirEntry->modified.year = dir->fileInfo.time.year;
+      dirEntry->modified.month = dir->fileInfo.time.mon;
+      dirEntry->modified.day = dir->fileInfo.time.day;
+      dirEntry->modified.hours = dir->fileInfo.time.hr;
+      dirEntry->modified.minutes = dir->fileInfo.time.min;
+      dirEntry->modified.seconds = dir->fileInfo.time.sec;
+      dirEntry->modified.milliseconds = 0;
 
-      //Retrieve the full pathname
-      pathCombine(path, entry->d_name, FS_MAX_PATH_LEN);
-      pathCanonicalize(path);
-
-      //Get file status
-      ret = stat(path, &fileStat);
-
-      //On success, zero is returned
-      if(ret == 0)
-      {
-         //File size
-         dirEntry->size = fileStat.st_size;
-
-         //Time of last modification
-         convertUnixTimeToDate(fileStat.st_mtime, &dirEntry->modified);
-      }
-      else
-      {
-         //File size
-         dirEntry->size = 0;
-
-         //Time of last modification
-         dirEntry->modified.year = 1970;
-         dirEntry->modified.month = 1;
-         dirEntry->modified.day = 1;
-         dirEntry->modified.dayOfWeek = 0;
-         dirEntry->modified.hours = 0;
-         dirEntry->modified.minutes = 0;
-         dirEntry->modified.seconds = 0;
-         dirEntry->modified.milliseconds = 0;
-      }
+      //Make sure the date is valid
+      dirEntry->modified.month = MAX(dirEntry->modified.month, 1);
+      dirEntry->modified.month = MIN(dirEntry->modified.month, 12);
+      dirEntry->modified.day = MAX(dirEntry->modified.day, 1);
+      dirEntry->modified.day = MIN(dirEntry->modified.day, 31);
 
       //Successful processing
       error = NO_ERROR;
@@ -636,9 +602,6 @@ void fsCloseDir(FsDir *dir)
    //Make sure the directory pointer is valid
    if(dir != NULL)
    {
-      //Close the specified directory
-      closedir(dir->handle);
-
       //Release directory descriptor
       osFreeMem(dir);
    }

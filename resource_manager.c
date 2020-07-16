@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Dependencies
@@ -222,7 +222,7 @@ error_t resSearchFile(const char_t *path, DirEntry *dirEntry)
    dirEntry->dataLength = resEntry->dataLength;
    dirEntry->nameLength = 0; //resEntry->nameLength;
    //Copy the filename
-   //strncpy(dirEntry->name, resEntry->name, dirEntry->nameLength);
+   //osStrncpy(dirEntry->name, resEntry->name, dirEntry->nameLength);
    //Properly terminate the filename
    //dirEntry->name[dirEntry->nameLength] = '\0';
 
@@ -252,7 +252,7 @@ error_t resSeekFile(FsFile *file, uint32_t *position)
 uint_t resReadFile(FsFile *file, void *data, size_t length)
 {
    length = MIN(length, file->size - file->offset);
-   memcpy(data, res + file->start + file->offset, length);
+   osMemcpy(data, res + file->start + file->offset, length);
    file->offset += length;
    return length;
 }

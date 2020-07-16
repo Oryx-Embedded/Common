@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -87,21 +87,22 @@ typedef uint32_t systime_t;
    #define PRIu16 "u"
 #endif
 
+//ARM compiler V6?
+#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+   char *strtok_r(char *s, const char *delim, char **last);
 //CodeWarrior compiler?
-#if defined(__CWCC__)
+#elif defined(__CWCC__)
    typedef uint32_t time_t;
    int strcasecmp(const char *s1, const char *s2);
    int strncasecmp(const char *s1, const char *s2, size_t n);
    char *strtok_r(char *s, const char *delim, char **last);
-//TI ARM C compiler?
+//TI ARM compiler?
 #elif defined(__TI_ARM__)
    int strcasecmp(const char *s1, const char *s2);
    int strncasecmp(const char *s1, const char *s2, size_t n);
    char *strtok_r(char *s, const char *delim, char **last);
-#endif
-
 //Microchip XC32 compiler?
-#if defined(__XC32)
+#elif defined(__XC32)
    #define sprintf _sprintf
    int sprintf(char * str, const char * format, ...);
    int strcasecmp(const char *s1, const char *s2);
@@ -109,21 +110,28 @@ typedef uint32_t systime_t;
    char *strtok_r(char *s, const char *delim, char **last);
 #endif
 
+//ARM compiler V6?
+#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+   #undef __start_packed
+   #define __start_packed
+   #undef __end_packed
+   #define __end_packed __attribute__((packed))
+   #define __weak __attribute__((weak))
 //GCC compiler?
-#if defined(__GNUC__)
+#elif defined(__GNUC__)
    #undef __start_packed
    #define __start_packed
    #undef __end_packed
    #define __end_packed __attribute__((__packed__))
    #define __weak __attribute__((weak))
-//Keil MDK-ARM compiler?
+//ARM compiler?
 #elif defined(__CC_ARM)
    #pragma anon_unions
    #undef __start_packed
    #define __start_packed __packed
    #undef __end_packed
    #define __end_packed
-//IAR C compiler?
+//IAR compiler?
 #elif defined(__IAR_SYSTEMS_ICC__)
    #undef __start_packed
    #define __start_packed __packed
@@ -136,7 +144,7 @@ typedef uint32_t systime_t;
    #undef __end_packed
    #define __end_packed
    #define __weak
-//TI ARM C compiler?
+//TI ARM compiler?
 #elif defined(__TI_ARM__)
    #undef __start_packed
    #define __start_packed

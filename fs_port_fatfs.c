@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Dependencies
@@ -104,8 +104,8 @@ error_t fsInit(void)
    FRESULT res;
 
    //Clear file system objects
-   memset(fileTable, 0, sizeof(fileTable));
-   memset(dirTable, 0, sizeof(dirTable));
+   osMemset(fileTable, 0, sizeof(fileTable));
+   osMemset(dirTable, 0, sizeof(dirTable));
 
    //Create a mutex to protect critical sections
    if(!osCreateMutex(&fsMutex))
@@ -221,6 +221,7 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
    //Any error to report?
    if(res != FR_OK)
       return ERROR_FAILURE;
+
    //Valid file?
    if(fno.fattrib & AM_DIR)
       return ERROR_FAILURE;
@@ -242,6 +243,10 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
 
 error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 {
+#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+   //Read-only configuration
+   return ERROR_READ_ONLY_ACCESS;
+#else
    FRESULT res;
 
    //Check parameters
@@ -269,6 +274,7 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 
    //Successful processing
    return NO_ERROR;
+#endif
 }
 
 
@@ -280,6 +286,10 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 
 error_t fsDeleteFile(const char_t *path)
 {
+#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+   //Read-only configuration
+   return ERROR_READ_ONLY_ACCESS;
+#else
    FRESULT res;
 
    //Make sure the pathname is valid
@@ -307,6 +317,7 @@ error_t fsDeleteFile(const char_t *path)
 
    //Successful processing
    return NO_ERROR;
+#endif
 }
 
 
@@ -434,6 +445,10 @@ error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin)
 
 error_t fsWriteFile(FsFile *file, void *data, size_t length)
 {
+#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+   //Read-only configuration
+   return ERROR_READ_ONLY_ACCESS;
+#else
    UINT n;
    FRESULT res;
 
@@ -466,6 +481,7 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
 
    //Successful processing
    return NO_ERROR;
+#endif
 }
 
 
@@ -570,7 +586,7 @@ bool_t fsDirExists(const char_t *path)
       return FALSE;
 
    //Root directory?
-   if(!strcmp(path, "/"))
+   if(!osStrcmp(path, "/"))
       return TRUE;
 
 #if ((FATFS_REVISON <= FATFS_R(0, 12, c) && _FS_REENTRANT == 0) || \
@@ -608,6 +624,10 @@ bool_t fsDirExists(const char_t *path)
 
 error_t fsCreateDir(const char_t *path)
 {
+#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+   //Read-only configuration
+   return ERROR_READ_ONLY_ACCESS;
+#else
    FRESULT res;
 
    //Make sure the pathname is valid
@@ -635,6 +655,7 @@ error_t fsCreateDir(const char_t *path)
 
    //Successful processing
    return NO_ERROR;
+#endif
 }
 
 
@@ -646,6 +667,10 @@ error_t fsCreateDir(const char_t *path)
 
 error_t fsRemoveDir(const char_t *path)
 {
+#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+   //Read-only configuration
+   return ERROR_READ_ONLY_ACCESS;
+#else
    FRESULT res;
 
    //Make sure the pathname is valid
@@ -673,6 +698,7 @@ error_t fsRemoveDir(const char_t *path)
 
    //Successful processing
    return NO_ERROR;
+#endif
 }
 
 
@@ -802,12 +828,12 @@ error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry)
    dirEntry->modified.day = MIN(dirEntry->modified.day, 31);
 
    //Retrieve the length of the file name
-   n = strlen(fn);
+   n = osStrlen(fn);
    //Limit the number of characters to be copied
    n = MIN(n, FS_MAX_NAME_LEN);
 
    //Copy file name
-   strncpy(dirEntry->name, fn, n);
+   osStrncpy(dirEntry->name, fn, n);
    //Properly terminate the string with a NULL character
    dirEntry->name[n] = '\0';
 

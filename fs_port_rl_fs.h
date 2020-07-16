@@ -1,6 +1,6 @@
 /**
- * @file fs_port_posix.h
- * @brief File system abstraction layer (POSIX)
+ * @file fs_port_rl_fs.h
+ * @brief File system abstraction layer (RL-FlashFS)
  *
  * @section License
  *
@@ -26,11 +26,12 @@
  * @version 1.9.8
  **/
 
-#ifndef _FS_PORT_POSIX_H
-#define _FS_PORT_POSIX_H
+#ifndef _FS_PORT_RL_FS_H
+#define _FS_PORT_RL_FS_H
 
 //Dependencies
 #include "os_port.h"
+#include "rl_fs.h"
 
 //Maximum path length
 #ifndef FS_MAX_PATH_LEN
@@ -58,16 +59,13 @@ typedef void FsFile;
 
 typedef struct
 {
-   void *handle;
-   char_t path[FS_MAX_PATH_LEN + 1];
+   char_t pattern[FS_MAX_PATH_LEN + 1];
+   fsFileInfo fileInfo;
 } FsDir;
 
 
 //File system abstraction layer
 error_t fsInit(void);
-
-error_t fsGetFileAttr(const char_t *path, uint32_t *attributes,
-   uint32_t *size, DateTime *modified);
 
 bool_t fsFileExists(const char_t *path);
 error_t fsGetFileSize(const char_t *path, uint32_t *size);

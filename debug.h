@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _DEBUG_H
@@ -40,6 +40,7 @@
 #define TRACE_LEVEL_WARNING  3
 #define TRACE_LEVEL_INFO     4
 #define TRACE_LEVEL_DEBUG    5
+#define TRACE_LEVEL_VERBOSE  6
 
 //Default trace level
 #ifndef TRACE_LEVEL
@@ -112,6 +113,18 @@
    #define TRACE_DEBUG_ARRAY(p, a, n)
    #define TRACE_DEBUG_NET_BUFFER(p, b, o, n)
    #define TRACE_DEBUG_MPI(p, a)
+#endif
+
+#if (TRACE_LEVEL >= TRACE_LEVEL_VERBOSE)
+   #define TRACE_VERBOSE(...) TRACE_PRINTF(__VA_ARGS__)
+   #define TRACE_VERBOSE_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
+   #define TRACE_VERBOSE_NET_BUFFER(p, b, o, n)
+   #define TRACE_VERBOSE_MPI(p, a) TRACE_MPI(p, a)
+#else
+   #define TRACE_VERBOSE(...)
+   #define TRACE_VERBOSE_ARRAY(p, a, n)
+   #define TRACE_VERBOSE_NET_BUFFER(p, b, o, n)
+   #define TRACE_VERBOSE_MPI(p, a)
 #endif
 
 //C++ guard

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Dependencies
@@ -101,21 +101,21 @@ const char_t *formatSystemTime(systime_t time, char_t *str)
    //Format system time
    if(hours > 0)
    {
-      sprintf(str, "%" PRIu16 "h %02" PRIu8 "min %02" PRIu8 "s %03" PRIu16 "ms",
+      osSprintf(str, "%" PRIu16 "h %02" PRIu8 "min %02" PRIu8 "s %03" PRIu16 "ms",
          hours, minutes, seconds, milliseconds);
    }
    else if(minutes > 0)
    {
-      sprintf(str, "%" PRIu8 "min %02" PRIu8 "s %03" PRIu16 "ms",
+      osSprintf(str, "%" PRIu8 "min %02" PRIu8 "s %03" PRIu16 "ms",
          minutes, seconds, milliseconds);
    }
    else if(seconds > 0)
    {
-      sprintf(str, "%" PRIu8 "s %03" PRIu16 "ms", seconds, milliseconds);
+      osSprintf(str, "%" PRIu8 "s %03" PRIu16 "ms", seconds, milliseconds);
    }
    else
    {
-      sprintf(str, "%" PRIu16 "ms", milliseconds);
+      osSprintf(str, "%" PRIu16 "ms", milliseconds);
    }
 
    //Return a pointer to the formatted string
@@ -141,13 +141,13 @@ const char_t *formatDate(const DateTime *date, char_t *str)
    //Format date
    if(date->dayOfWeek)
    {
-      sprintf(str, "%s, %s %" PRIu8 ", %" PRIu16 " %02" PRIu8 ":%02" PRIu8 ":%02" PRIu8,
+      osSprintf(str, "%s, %s %" PRIu8 ", %" PRIu16 " %02" PRIu8 ":%02" PRIu8 ":%02" PRIu8,
          days[MIN(date->dayOfWeek, 7)], months[MIN(date->month, 12)], date->day,
          date->year, date->hours, date->minutes, date->seconds);
    }
    else
    {
-      sprintf(str, "%s %" PRIu8 ", %" PRIu16 " %02" PRIu8 ":%02" PRIu8 ":%02" PRIu8,
+      osSprintf(str, "%s %" PRIu8 ", %" PRIu16 " %02" PRIu8 ":%02" PRIu8 ":%02" PRIu8,
          months[MIN(date->month, 12)], date->day, date->year,
          date->hours, date->minutes, date->seconds);
    }

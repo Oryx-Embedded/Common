@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Dependencies
@@ -75,7 +75,7 @@ const char_t *pathFindFileName(const char_t *path)
    size_t n;
 
    //Retrieve the length of the path
-   n = strlen(path);
+   n = osStrlen(path);
 
    //Skip trailing slash or backslash characters
    while(n > 0)
@@ -149,7 +149,7 @@ void pathCanonicalize(char_t *path)
       if(path[i] == '/' || path[i] == '\0')
       {
          //"." element found?
-         if((i - j) == 1 && !strncmp(path + j, ".", 1))
+         if((i - j) == 1 && !osStrncmp(path + j, ".", 1))
          {
             //Check whether the pathname is empty?
             if(k == 0)
@@ -172,7 +172,7 @@ void pathCanonicalize(char_t *path)
             }
          }
          //".." element found?
-         else if((i - j) == 2 && !strncmp(path + j, "..", 2))
+         else if((i - j) == 2 && !osStrncmp(path + j, "..", 2))
          {
             //Check whether the pathname is empty?
             if(k == 0)
@@ -196,7 +196,7 @@ void pathCanonicalize(char_t *path)
                //Slash separator found?
                if(j < k)
                {
-                  if(!strncmp(path + k - j, "..", 2))
+                  if(!osStrncmp(path + k - j, "..", 2))
                   {
                      path[k++] = '.';
                      path[k++] = '.';
@@ -215,7 +215,7 @@ void pathCanonicalize(char_t *path)
                //No slash separator found?
                else
                {
-                  if(k == 3 && !strncmp(path, "..", 2))
+                  if(k == 3 && !osStrncmp(path, "..", 2))
                   {
                      path[k++] = '.';
                      path[k++] = '.';
@@ -245,7 +245,7 @@ void pathCanonicalize(char_t *path)
          else
          {
             //Copy directory name
-            memmove(path + k, path + j, i - j);
+            osMemmove(path + k, path + j, i - j);
             //Advance write pointer
             k += i - j;
 
@@ -276,14 +276,14 @@ void pathAddSlash(char_t *path, size_t maxLen)
    size_t n;
 
    //Retrieve the length of the string
-   n = strlen(path);
+   n = osStrlen(path);
 
    //Add a slash character only if necessary
    if(!n)
    {
       //Check the length of the resulting string
       if(maxLen >= 1)
-         strcpy(path, "/");
+         osStrcpy(path, "/");
    }
    else if(path[n - 1] != '/' && path[n - 1] != '\\')
    {
@@ -342,9 +342,9 @@ void pathCombine(char_t *path, const char_t *more, size_t maxLen)
    while(*more == '/' || *more == '\\') more++;
 
    //Retrieve the length of the first path
-   n1 = strlen(path);
+   n1 = osStrlen(path);
    //Retrieve the length of second path
-   n2 = strlen(more);
+   n2 = osStrlen(more);
 
    //Check the length of the resulting string
    if(n1 < maxLen)
@@ -352,7 +352,7 @@ void pathCombine(char_t *path, const char_t *more, size_t maxLen)
       //Limit the number of characters to be copied
       n2 = MIN(n2, maxLen - n1);
       //Concatenate the resulting string
-      strncpy(path + n1, more, n2);
+      osStrncpy(path + n1, more, n2);
       //Properly terminate the string with a NULL character
       path[n1 + n2] = '\0';
    }
@@ -412,7 +412,7 @@ bool_t pathMatch(const char_t *path, const char_t *pattern)
       else
       {
          //Case insensitive comparison
-         if(tolower((uint8_t) path[i]) != tolower((uint8_t) pattern[j]))
+         if(osTolower(path[i]) != osTolower(pattern[j]))
          {
             return FALSE;
          }
