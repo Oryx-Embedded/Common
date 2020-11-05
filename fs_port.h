@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _FS_PORT_H
@@ -86,6 +86,18 @@ typedef enum
    FS_SEEK_CUR = 1,
    FS_SEEK_END = 2
 } FsSeekOrigin;
+
+
+/**
+ * @brief File status
+ **/
+
+typedef struct
+{
+   uint32_t attributes;
+   uint32_t size;
+   DateTime modified;
+} FsFileStat;
 
 
 /**

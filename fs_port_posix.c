@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Dependencies
@@ -51,70 +51,6 @@ error_t fsInit(void)
 
 
 /**
- * @brief Retrieve the attributes of the specified file
- * @param[in] path NULL-terminated string specifying the filename
- * @param[out] attributes File attributes (optional parameter)
- * @param[out] size Size of the file in bytes (optional parameter)
- * @param[out] modified Time of last modification (optional parameter)
- * @return Error code
- **/
-
-error_t fsGetFileAttr(const char_t *path, uint32_t *attributes,
-   uint32_t *size, DateTime *modified)
-{
-   error_t error;
-   int_t ret;
-   struct stat fileStat;
-
-   //Make sure the pathname is valid
-   if(path == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get file status
-   ret = stat(path, &fileStat);
-
-   //On success, zero is returned
-   if(ret == 0)
-   {
-      //File attributes
-      if(attributes != NULL)
-      {
-         //Check file attributes
-         if(S_ISDIR(fileStat.st_mode))
-            *attributes = FS_FILE_ATTR_DIRECTORY;
-         else
-            *attributes = 0;
-      }
-
-      //The parameter is optional
-      if(size != NULL)
-      {
-         //Save the size of the file
-         *size = fileStat.st_size;
-      }
-
-      //The parameter is optional
-      if(modified != NULL)
-      {
-         //Save the time of last modification
-         convertUnixTimeToDate(fileStat.st_mtime, modified);
-      }
-
-      //Sucessful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //The specified file does not exist
-      error = ERROR_FILE_NOT_FOUND;
-   }
-
-   //Return status code
-   return error;
-}
-
-
-/**
  * @brief Check whether a file exists
  * @param[in] path NULL-terminated string specifying the filename
  * @return The function returns TRUE if the file exists. Otherwise FALSE is returned
@@ -123,8 +59,8 @@ error_t fsGetFileAttr(const char_t *path, uint32_t *attributes,
 bool_t fsFileExists(const char_t *path)
 {
    error_t error;
-   uint32_t attributes;
    bool_t found;
+   FsFileStat fileStat;
 
    //Clear flag
    found = FALSE;
@@ -133,13 +69,13 @@ bool_t fsFileExists(const char_t *path)
    if(path != NULL)
    {
       //Retrieve the attributes of the specified file
-      error = fsGetFileAttr(path, &attributes, NULL, NULL);
+      error = fsGetFileStat(path, &fileStat);
 
       //Check whether the file exists
       if(!error)
       {
          //Valid file?
-         if((attributes & FS_FILE_ATTR_DIRECTORY) == 0)
+         if((fileStat.attributes & FS_FILE_ATTR_DIRECTORY) == 0)
          {
             found = TRUE;
          }
@@ -161,13 +97,73 @@ bool_t fsFileExists(const char_t *path)
 error_t fsGetFileSize(const char_t *path, uint32_t *size)
 {
    error_t error;
+   FsFileStat fileStat;
 
    //Check parameters
    if(path == NULL || size == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Retrieve the attributes of the specified file
-   error = fsGetFileAttr(path, NULL, size, NULL);
+   error = fsGetFileStat(path, &fileStat);
+
+   //Check whether the file exists
+   if(!error)
+   {
+      //Return the size of the file
+      *size = fileStat.size;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Retrieve the attributes of the specified file
+ * @param[in] path NULL-terminated string specifying the filename
+ * @param[out] fileStat File attributes
+ * @return Error code
+ **/
+
+error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
+{
+   error_t error;
+   int_t ret;
+   struct stat status;
+
+   //Make sure the pathname is valid
+   if(path == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Get file status
+   ret = stat(path, &status);
+
+   //On success, zero is returned
+   if(ret == 0)
+   {
+      //Clear file attributes
+      osMemset(fileStat, 0, sizeof(FsFileStat));
+
+      //Check file attributes
+      if(S_ISDIR(status.st_mode))
+      {
+         fileStat->attributes = FS_FILE_ATTR_DIRECTORY;
+      }
+
+      //Save the size of the file
+      fileStat->size = status.st_size;
+
+      //Save the time of last modification
+      convertUnixTimeToDate(status.st_mtime, &fileStat->modified);
+
+      //Sucessful processing
+      error = NO_ERROR;
+   }
+   else
+   {
+      //The specified file does not exist
+      error = ERROR_FILE_NOT_FOUND;
+   }
 
    //Return status code
    return error;
@@ -195,9 +191,13 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 
    //On success, zero is returned
    if(ret == 0)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -224,9 +224,13 @@ error_t fsDeleteFile(const char_t *path)
 
    //On success, zero is returned
    if(ret == 0)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -254,9 +258,13 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
 
    //Check file access mode
    if(mode & FS_FILE_MODE_WRITE)
+   {
       osStrcpy(s, "wb");
+   }
    else
+   {
       osStrcpy(s, "rb");
+   }
 
    //Open the specified file
    fp = fopen(path, s);
@@ -284,21 +292,35 @@ error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin)
    if(file == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //The origin is used as reference for the offset
    if(origin == FS_SEEK_CUR)
-      origin = SEEK_SET;
-   else if(origin == FS_SEEK_END)
-      origin = SEEK_END;
-   else
+   {
+      //The offset is relative to the current file pointer
       origin = SEEK_CUR;
+   }
+   else if(origin == FS_SEEK_END)
+   {
+      //The offset is relative to the end of the file
+      origin = SEEK_END;
+   }
+   else
+   {
+      //The offset is absolute
+      origin = SEEK_SET;
+   }
 
    //Move read/write pointer
    ret = fseek(file, offset, origin);
 
    //On success, zero is returned
    if(ret == 0)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -329,9 +351,13 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
    //number differs from the count parameter, a writing error prevented the
    //function from completing
    if(n == length)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -409,20 +435,20 @@ void fsCloseFile(FsFile *file)
 bool_t fsDirExists(const char_t *path)
 {
    error_t error;
-   uint32_t attributes;
    bool_t found;
+   FsFileStat fileStat;
 
    //Clear flag
    found = FALSE;
 
    //Retrieve the attributes of the specified file
-   error = fsGetFileAttr(path, &attributes, NULL, NULL);
+   error = fsGetFileStat(path, &fileStat);
 
    //Check whether the file exists
    if(!error)
    {
       //Valid directory?
-      if((attributes & FS_FILE_ATTR_DIRECTORY) != 0)
+      if((fileStat.attributes & FS_FILE_ATTR_DIRECTORY) != 0)
       {
          found = TRUE;
       }
@@ -453,9 +479,13 @@ error_t fsCreateDir(const char_t *path)
 
    //On success, zero is returned
    if(ret == 0)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -482,9 +512,13 @@ error_t fsRemoveDir(const char_t *path)
 
    //On success, zero is returned
    if(ret == 0)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;

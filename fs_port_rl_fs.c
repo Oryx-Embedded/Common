@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Dependencies
@@ -58,9 +58,13 @@ error_t fsInit(void)
 
    //On success, fsOK is returned
    if(status == fsOK)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -144,6 +148,63 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
 
 
 /**
+ * @brief Retrieve the attributes of the specified file
+ * @param[in] path NULL-terminated string specifying the filename
+ * @param[out] fileStat File attributes
+ * @return Error code
+ **/
+
+error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
+{
+   fsStatus status;
+   fsFileInfo fileInfo;
+
+   //Check parameters
+   if(path == NULL || fileStat == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The fileID field must be initialized to zero
+   fileInfo.fileID = 0;
+   //Find the the specified path name
+   status = ffind(path, &fileInfo);
+
+   //Any error to report?
+   if(status != fsOK)
+      return ERROR_FAILURE;
+
+   //Valid file?
+   if((fileInfo.attrib & FS_FAT_ATTR_DIRECTORY) != 0)
+      return ERROR_FAILURE;
+
+   //Clear file attributes
+   osMemset(fileStat, 0, sizeof(FsFileStat));
+
+   //File attributes
+   fileStat->attributes = fileInfo.attrib;
+   //File size
+   fileStat->size = fileInfo.size;
+
+   //Time of last modification
+   fileStat->modified.year = fileInfo.time.year;
+   fileStat->modified.month = fileInfo.time.mon;
+   fileStat->modified.day = fileInfo.time.day;
+   fileStat->modified.hours = fileInfo.time.hr;
+   fileStat->modified.minutes = fileInfo.time.min;
+   fileStat->modified.seconds = fileInfo.time.sec;
+   fileStat->modified.milliseconds = 0;
+
+   //Make sure the date is valid
+   fileStat->modified.month = MAX(fileStat->modified.month, 1);
+   fileStat->modified.month = MIN(fileStat->modified.month, 12);
+   fileStat->modified.day = MAX(fileStat->modified.day, 1);
+   fileStat->modified.day = MIN(fileStat->modified.day, 31);
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
  * @brief Rename the specified file
  * @param[in] oldPath NULL-terminated string specifying the pathname of the file to be renamed
  * @param[in] newPath NULL-terminated string specifying the new filename
@@ -168,9 +229,13 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 
    //On success, fsOK is returned
    if(status == fsOK)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -197,9 +262,13 @@ error_t fsDeleteFile(const char_t *path)
 
    //On success, fsOK is returned
    if(status == fsOK)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -227,9 +296,13 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
 
    //Check file access mode
    if(mode & FS_FILE_MODE_WRITE)
+   {
       osStrcpy(s, "wb");
+   }
    else
+   {
       osStrcpy(s, "rb");
+   }
 
    //Open the specified file
    fp = fopen(path, s);
@@ -257,21 +330,35 @@ error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin)
    if(file == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //The origin is used as reference for the offset
    if(origin == FS_SEEK_CUR)
-      origin = SEEK_SET;
-   else if(origin == FS_SEEK_END)
-      origin = SEEK_END;
-   else
+   {
+      //The offset is relative to the current file pointer
       origin = SEEK_CUR;
+   }
+   else if(origin == FS_SEEK_END)
+   {
+      //The offset is relative to the end of the file
+      origin = SEEK_END;
+   }
+   else
+   {
+      //The offset is absolute
+      origin = SEEK_SET;
+   }
 
    //Move read/write pointer
    ret = fseek(file, offset, origin);
 
    //On success, zero is returned
    if(ret == 0)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -302,9 +389,13 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
    //number differs from the count parameter, a writing error prevented the
    //function from completing
    if(n == length)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -441,9 +532,13 @@ error_t fsCreateDir(const char_t *path)
 
    //On success, fsOK is returned
    if(status == fsOK)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;
@@ -470,9 +565,13 @@ error_t fsRemoveDir(const char_t *path)
 
    //On success, fsOK is returned
    if(status == fsOK)
+   {
       error = NO_ERROR;
+   }
    else
+   {
       error = ERROR_FAILURE;
+   }
 
    //Return status code
    return error;

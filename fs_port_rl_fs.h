@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _FS_PORT_RL_FS_H
@@ -69,6 +69,7 @@ error_t fsInit(void);
 
 bool_t fsFileExists(const char_t *path);
 error_t fsGetFileSize(const char_t *path, uint32_t *size);
+error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat);
 error_t fsRenameFile(const char_t *oldPath, const char_t *newPath);
 error_t fsDeleteFile(const char_t *path);
 

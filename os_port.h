@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _OS_PORT_H
@@ -170,6 +170,12 @@
    #define osStrcasecmp(s1, s2) strcasecmp(s1, s2)
 #endif
 
+//Compare substrings without case
+#ifndef osStrncasecmp
+   #include <stdio.h>
+   #define osStrncasecmp(s1, s2, length) strncasecmp(s1, s2, length)
+#endif
+
 //Copy string
 #ifndef osStrcpy
    #include <string.h>
@@ -180,6 +186,12 @@
 #ifndef osStrncpy
    #include <string.h>
    #define osStrncpy(s1, s2, length) (void) strncpy(s1, s2, length)
+#endif
+
+//Concatenate strings
+#ifndef osStrcat
+   #include <string.h>
+   #define osStrcat(s1, s2) (void) strcat(s1, s2)
 #endif
 
 //Extract tokens from string
@@ -230,6 +242,8 @@
    #define osIsdigit(c) isdigit((uint8_t) (c))
 #endif
 
+#if !defined(__linux__) && !defined(__FreeBSD__)
+
 //Delay routines
 #ifndef usleep
    #define usleep(delay) {volatile uint32_t n = delay * 4; while(n > 0) n--;}
@@ -239,4 +253,5 @@
    #define sleep(delay) {volatile uint32_t n = delay * 4000; while(n > 0) n--;}
 #endif
 
+#endif
 #endif

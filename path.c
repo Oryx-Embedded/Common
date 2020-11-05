@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Dependencies
@@ -101,6 +101,29 @@ const char_t *pathFindFileName(const char_t *path)
 
    //Return a pointer to the file name
    return path + n;
+}
+
+
+/**
+ * @brief Copy a path
+ * @param[out] dest Pointer to the destination buffer
+ * @param[in] src Pointer to the source path
+ * @param[in] maxLen Maximum pathname length
+ **/
+
+void pathCopy(char_t *dest, const char_t *src, size_t maxLen)
+{
+   size_t n;
+
+   //Get the length of the source path
+   n = osStrlen(src);
+   //Limit the number of characters to be copied
+   n = MIN(n, maxLen);
+
+   //Copy the string
+   osStrncpy(dest, src, n);
+   //Properly terminate the string with a NULL character
+   dest[n] = '\0';
 }
 
 
@@ -289,7 +312,7 @@ void pathAddSlash(char_t *path, size_t maxLen)
    {
       //Check the length of the resulting string
       if(maxLen >= (n + 1))
-         strcat(path, "/");
+         osStrcat(path, "/");
    }
 }
 

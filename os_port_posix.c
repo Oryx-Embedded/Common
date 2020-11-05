@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -32,6 +32,7 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include "os_port.h"
 #include "os_port_posix.h"
@@ -113,7 +114,7 @@ void osDeleteTask(OsTask *task)
 void osDelayTask(systime_t delay)
 {
    //Delay the task for the specified duration
-   sleep(delay);
+   usleep(delay * 1000);
 }
 
 

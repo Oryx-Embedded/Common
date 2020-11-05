@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _PATH_H
@@ -42,6 +42,8 @@ bool_t pathIsAbsolute(const char_t *path);
 bool_t pathIsRelative(const char_t *path);
 
 const char_t *pathFindFileName(const char_t *path);
+
+void pathCopy(char_t *dest, const char_t *src, size_t maxLen);
 
 void pathCanonicalize(char_t *path);
 

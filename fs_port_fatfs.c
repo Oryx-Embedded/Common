@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Dependencies
@@ -235,6 +235,75 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
 
 
 /**
+ * @brief Retrieve the attributes of the specified file
+ * @param[in] path NULL-terminated string specifying the filename
+ * @param[out] fileStat File attributes
+ * @return Error code
+ **/
+
+error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
+{
+   FRESULT res;
+   FILINFO fno;
+
+#if (FATFS_REVISON <= FATFS_R(0, 11, a) && _USE_LFN != 0)
+   fno.lfname = NULL;
+   fno.lfsize = 0;
+#endif
+
+   //Check parameters
+   if(path == NULL || fileStat == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if ((FATFS_REVISON <= FATFS_R(0, 12, c) && _FS_REENTRANT == 0) || \
+   (FATFS_REVISON >= FATFS_R(0, 13, 0) && FF_FS_REENTRANT == 0))
+   //Enter critical section
+   osAcquireMutex(&fsMutex);
+#endif
+
+   //Retrieve information about the specified file
+   res = f_stat(path, &fno);
+
+#if ((FATFS_REVISON <= FATFS_R(0, 12, c) && _FS_REENTRANT == 0) || \
+   (FATFS_REVISON >= FATFS_R(0, 13, 0) && FF_FS_REENTRANT == 0))
+   //Leave critical section
+   osReleaseMutex(&fsMutex);
+#endif
+
+   //Any error to report?
+   if(res != FR_OK)
+      return ERROR_FAILURE;
+
+   //Clear file attributes
+   osMemset(fileStat, 0, sizeof(FsFileStat));
+
+   //File attributes
+   fileStat->attributes = fno.fattrib;
+   //File size
+   fileStat->size = fno.fsize;
+
+   //Time of last modification
+   fileStat->modified.year = 1980 + ((fno.fdate >> 9) & 0x7F);
+   fileStat->modified.month = (fno.fdate >> 5) & 0x0F;
+   fileStat->modified.day = fno.fdate & 0x1F;
+   fileStat->modified.dayOfWeek = 0;
+   fileStat->modified.hours = (fno.ftime >> 11) & 0x1F;
+   fileStat->modified.minutes = (fno.ftime >> 5) & 0x3F;
+   fileStat->modified.seconds = (fno.ftime & 0x1F) * 2;
+   fileStat->modified.milliseconds = 0;
+
+   //Make sure the date is valid
+   fileStat->modified.month = MAX(fileStat->modified.month, 1);
+   fileStat->modified.month = MIN(fileStat->modified.month, 12);
+   fileStat->modified.day = MAX(fileStat->modified.day, 1);
+   fileStat->modified.day = MIN(fileStat->modified.day, 31);
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
  * @brief Rename the specified file
  * @param[in] oldPath NULL-terminated string specifying the pathname of the file to be renamed
  * @param[in] newPath NULL-terminated string specifying the new filename
@@ -361,10 +430,13 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
          //Check access mode
          if(mode & FS_FILE_MODE_READ)
             flags |= FA_READ;
+
          if(mode & FS_FILE_MODE_WRITE)
             flags |= FA_WRITE;
+
          if(mode & FS_FILE_MODE_CREATE)
             flags |= FA_OPEN_ALWAYS;
+
          if(mode & FS_FILE_MODE_TRUNC)
             flags |= FA_CREATE_ALWAYS;
 
@@ -410,12 +482,21 @@ error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin)
    osAcquireMutex(&fsMutex);
 #endif
 
-   //Offset is relative to the current file pointer position?
+   //The origin is used as reference for the offset
    if(origin == FS_SEEK_CUR)
+   {
+      //The offset is relative to the current file pointer
       offset += f_tell((FIL *) file);
-   //Offset is relative to the end of the file?
+   }
    else if(origin == FS_SEEK_END)
+   {
+      //The offset is relative to the end of the file
       offset += f_size((FIL *) file);
+   }
+   else
+   {
+      //The offset is absolute
+   }
 
    //Move read/write pointer
    res = f_lseek((FIL *) file, offset);
