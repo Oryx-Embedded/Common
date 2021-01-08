@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.0
+ * @version 2.0.2
  **/
 
 #ifndef _PATH_H
@@ -41,7 +41,8 @@ extern "C" {
 bool_t pathIsAbsolute(const char_t *path);
 bool_t pathIsRelative(const char_t *path);
 
-const char_t *pathFindFileName(const char_t *path);
+const char_t *pathGetFilename(const char_t *path);
+void pathRemoveFilename(char_t *path);
 
 void pathCopy(char_t *dest, const char_t *src, size_t maxLen);
 

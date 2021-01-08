@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.0
+ * @version 2.0.2
  **/
 
 #ifndef _OS_PORT_H
@@ -154,26 +154,38 @@
 
 //Compare strings
 #ifndef osStrcmp
-   #include <stdio.h>
+   #include <string.h>
    #define osStrcmp(s1, s2) strcmp(s1, s2)
 #endif
 
 //Compare substrings
 #ifndef osStrncmp
-   #include <stdio.h>
+   #include <string.h>
    #define osStrncmp(s1, s2, length) strncmp(s1, s2, length)
 #endif
 
 //Compare strings without case
 #ifndef osStrcasecmp
-   #include <stdio.h>
+   #include <string.h>
    #define osStrcasecmp(s1, s2) strcasecmp(s1, s2)
 #endif
 
 //Compare substrings without case
 #ifndef osStrncasecmp
-   #include <stdio.h>
+   #include <string.h>
    #define osStrncasecmp(s1, s2, length) strncasecmp(s1, s2, length)
+#endif
+
+//Search for the first occurrence of a given character
+#ifndef osStrchr
+   #include <string.h>
+   #define osStrchr(s, c) strchr(s, c)
+#endif
+
+//Search for the first occurrence of a substring
+#ifndef osStrstr
+   #include <string.h>
+   #define osStrstr(s1, s2) strstr(s1, s2)
 #endif
 
 //Copy string
@@ -218,6 +230,12 @@
    #define osStrtoul(s, endptr, base) strtoul(s, endptr, base)
 #endif
 
+//Convert string to unsigned long long integer
+#ifndef osStrtoull
+   #include <stdlib.h>
+   #define osStrtoull(s, endptr, base) strtoull(s, endptr, base)
+#endif
+
 //Convert a character to lowercase
 #ifndef osTolower
    #include <ctype.h>
@@ -240,6 +258,17 @@
 #ifndef osIsdigit
    #include <ctype.h>
    #define osIsdigit(c) isdigit((uint8_t) (c))
+#endif
+
+//Check if a character is a whitespace character
+#ifndef osIsspace
+   #include <ctype.h>
+   #define osIsspace(c) isspace((uint8_t) (c))
+#endif
+
+//Check if a character is a blank character
+#ifndef osIsblank
+   #define osIsblank(c) ((c) == ' ' || (c) == '\t')
 #endif
 
 #if !defined(__linux__) && !defined(__FreeBSD__)

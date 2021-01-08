@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.0
+ * @version 2.0.2
  **/
 
 //Dependencies
@@ -222,7 +222,7 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
       return ERROR_INVALID_PARAMETER;
 
    //Get new file name
-   newName = pathFindFileName(newPath);
+   newName = pathGetFilename(newPath);
 
    //Rename the specified file
    status = frename(oldPath, newName);
