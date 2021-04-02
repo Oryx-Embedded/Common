@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -89,6 +89,11 @@ typedef uint32_t systime_t;
 
 //ARM compiler V6?
 #if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+   char *strtok_r(char *s, const char *delim, char **last);
+//GCC compiler?
+#elif defined(__GNUC__)
+   int strcasecmp(const char *s1, const char *s2);
+   int strncasecmp(const char *s1, const char *s2, size_t n);
    char *strtok_r(char *s, const char *delim, char **last);
 //CodeWarrior compiler?
 #elif defined(__CWCC__)
