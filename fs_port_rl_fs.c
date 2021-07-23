@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Dependencies
@@ -91,7 +91,7 @@ bool_t fsFileExists(const char_t *path)
    {
       //The fileID field must be initialized to zero
       fileInfo.fileID = 0;
-      //Find the the specified path name
+      //Find the specified path name
       status = ffind(path, &fileInfo);
 
       //Check status code
@@ -128,7 +128,7 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
 
    //The fileID field must be initialized to zero
    fileInfo.fileID = 0;
-   //Find the the specified path name
+   //Find the specified path name
    status = ffind(path, &fileInfo);
 
    //Any error to report?
@@ -165,7 +165,7 @@ error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
 
    //The fileID field must be initialized to zero
    fileInfo.fileID = 0;
-   //Find the the specified path name
+   //Find the specified path name
    status = ffind(path, &fileInfo);
 
    //Any error to report?
@@ -492,7 +492,7 @@ bool_t fsDirExists(const char_t *path)
       {
          //The fileID field must be initialized to zero
          fileInfo.fileID = 0;
-         //Find the the specified path name
+         //Find the specified path name
          status = ffind(path, &fileInfo);
 
          //Check status code

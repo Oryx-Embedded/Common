@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _OS_PORT_H
@@ -251,7 +251,7 @@
 //Check if a character is an uppercase letter
 #ifndef osIsupper
    #include <ctype.h>
-   #define osIsupper(c) isupper((c))
+   #define osIsupper(c) isupper((uint8_t) (c))
 #endif
 
 //Check if a character is a decimal digit

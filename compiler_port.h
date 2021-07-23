@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -85,6 +85,11 @@ typedef uint32_t systime_t;
    #define PRIu8 "u"
    #undef PRIu16
    #define PRIu16 "u"
+#endif
+
+#if defined(__MCUXPRESSO)
+   #undef PRIu64
+   #define PRIu64 "llu"
 #endif
 
 //ARM compiler V6?
