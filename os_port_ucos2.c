@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -37,9 +37,6 @@
 #include "os_port_ucos2.h"
 #include "debug.h"
 
-//Variables
-static OsTask tcbTable[OS_LOWEST_PRIO];
-
 
 /**
  * @brief Kernel initialization
@@ -47,9 +44,6 @@ static OsTask tcbTable[OS_LOWEST_PRIO];
 
 void osInitKernel(void)
 {
-   //Initialize table
-   osMemset(tcbTable, 0, sizeof(tcbTable));
-
    //Scheduler initialization
    OSInit();
 }
@@ -67,114 +61,67 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a static task
- * @param[out] task Pointer to the task structure
+ * @brief Create a task with statically allocated memory
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] tcb Pointer to the task control block
  * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return The function returns TRUE if the task was successfully
- *   created. Otherwise, FALSE is returned
+ * @return Task identifier referencing the newly created task
  **/
 
-bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *param, void *stack, size_t stackSize, int_t priority)
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority)
 {
    INT8U err;
    OS_STK *stackTop;
-
-   //Check stack size
-   if(stackSize == 0)
-      return FALSE;
 
    //Top of the stack
    stackTop = (OS_STK *) stack + (stackSize - 1);
 
    //Search for a free TCB
    while(priority < (OS_LOWEST_PRIO - 3) && OSTCBPrioTbl[priority] != 0)
+   {
       priority++;
+   }
 
-   //No more TCB available?
-   if(priority >= (OS_LOWEST_PRIO - 3))
-      return FALSE;
-
-   //Create a new task
-   err = OSTaskCreateExt(taskCode, param, stackTop, priority, priority,
-      stack, stackSize, NULL, OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+   //Any TCB available?
+   if(priority < (OS_LOWEST_PRIO - 3))
+   {
+      //Create a new task
+      err = OSTaskCreateExt(taskCode, param, stackTop, priority, priority,
+         stack, stackSize, NULL, OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+   }
+   else
+   {
+      //No more TCB available
+      err = OS_ERR_PRIO_INVALID;
+   }
 
    //Check whether the task was successfully created
    if(err == OS_ERR_NONE)
    {
-      //Save task priority
-      task->prio = priority;
-      //The task was successfully created
-      return TRUE;
+      return (OsTaskId) priority;
    }
    else
    {
-      //Report an error
-      return FALSE;
-   }
-}
-
-
-/**
- * @brief Create a new task
- * @param[in] name A name identifying the task
- * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
- **/
-
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
-{
-   //INT8U i;
-   OS_STK *stack;
-
-   //Allocate a memory block to hold the task's stack
-   stack = osAllocMem(stackSize * sizeof(OS_STK));
-
-   //Successful memory allocation?
-   if(stack != NULL)
-   {
-      //Create task
-      if(osCreateStaticTask(&tcbTable[priority], name,
-         taskCode, param, stack, stackSize, priority))
-      {
-         //Return a valid handle
-         return &tcbTable[priority];
-      }
-      else
-      {
-         //Clean up side effects
-         osFreeMem(stack);
-         //Report an error
-         return NULL;
-      }
-   }
-   else
-   {
-      //Memory allocation failed
-      return NULL;
+      return OS_INVALID_TASK_ID;
    }
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
    //Delete the specified task
-   OSTaskDel(task->prio);
+   OSTaskDel(taskId);
 }
 
 
@@ -259,9 +206,13 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the event flag group was successfully created
    if(event->p != NULL && err == OS_ERR_NONE)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -357,9 +308,13 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
    //Check whether the specified event is set
    if(err == OS_ERR_NONE)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -398,9 +353,13 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the semaphore was successfully created
    if(semaphore->p != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -440,9 +399,13 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
    {
       //Non-blocking call
       if(OSSemAccept(semaphore->p) > 0)
+      {
          err = OS_ERR_NONE;
+      }
       else
+      {
          err = OS_ERR_TIMEOUT;
+      }
    }
    else if(timeout == INFINITE_DELAY)
    {
@@ -470,9 +433,13 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //Check whether the specified semaphore is available
    if(err == OS_ERR_NONE)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -497,33 +464,20 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
-#if 1
-   bool_t status;
-
-   //Create an event object
-   status = osCreateEvent((OsEvent *) mutex);
-
-   //Check whether the event object was successfully created
-   if(status)
-   {
-      //Set event
-      osSetEvent((OsEvent *) mutex);
-   }
-
-   //Return status
-   return status;
-#else
    INT8U err;
 
    //Create a mutex
-   mutex->p = OSMutexCreate(10, &err);
+   mutex->p = OSMutexCreate(OS_PRIO_MUTEX_CEIL_DIS, &err);
 
    //Check whether the mutex was successfully created
    if(mutex->p != NULL && err == OS_ERR_NONE)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
-#endif
+   }
 }
 
 
@@ -534,10 +488,6 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-#if 1
-   //Delete event object
-   osDeleteEvent((OsEvent *) mutex);
-#else
    INT8U err;
 
    //Make sure the operating system is running
@@ -546,7 +496,6 @@ void osDeleteMutex(OsMutex *mutex)
       //Properly dispose the specified mutex
       OSMutexDel(mutex->p, OS_DEL_ALWAYS, &err);
    }
-#endif
 }
 
 
@@ -557,15 +506,10 @@ void osDeleteMutex(OsMutex *mutex)
 
 void osAcquireMutex(OsMutex *mutex)
 {
-#if 1
-   //Wait for event
-   osWaitForEvent((OsEvent *) mutex, INFINITE_DELAY);
-#else
    INT8U err;
 
    //Obtain ownership of the mutex object
    OSMutexPend(mutex->p, 0, &err);
-#endif
 }
 
 
@@ -576,13 +520,8 @@ void osAcquireMutex(OsMutex *mutex)
 
 void osReleaseMutex(OsMutex *mutex)
 {
-#if 1
-   //Set event
-   osSetEvent((OsEvent *) mutex);
-#else
    //Release ownership of the mutex object
    OSMutexPost(mutex->p);
-#endif
 }
 
 
@@ -610,7 +549,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -634,7 +573,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -63,17 +63,16 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a new task
+ * @brief Create a task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
+ * @return Task identifier referencing the newly created task
  **/
 
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
    void *param, size_t stackSize, int_t priority)
 {
    int_t ret;
@@ -84,21 +83,25 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
 
    //Return a pointer to the newly created thread
    if(ret == 0)
-      return (OsTask *) thread;
+   {
+      return (OsTaskId) thread;
+   }
    else
-      return NULL;
+   {
+      return OS_INVALID_TASK_ID;
+   }
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
    //Delete the calling thread?
-   if(task == NULL)
+   if(taskId == OS_SELF_TASK_ID)
    {
       //Kill ourselves
       pthread_exit(NULL);
@@ -164,9 +167,13 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the semaphore was successfully created
    if(ret == 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -324,9 +331,13 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the semaphore was successfully created
    if(ret == 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -388,9 +399,13 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //Check whether the specified semaphore is available
    if(ret == 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -422,9 +437,13 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the mutex was successfully created
    if(ret == 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -442,7 +461,7 @@ void osDeleteMutex(OsMutex *mutex)
 
 /**
  * @brief Acquire ownership of the specified mutex object
- * @param[in] mutex A handle to the mutex object
+ * @param[in] mutex Pointer to the mutex object
  **/
 
 void osAcquireMutex(OsMutex *mutex)
@@ -488,7 +507,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    //Allocate a memory block
    return malloc(size);
@@ -500,7 +519,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Free memory block
    free(p);

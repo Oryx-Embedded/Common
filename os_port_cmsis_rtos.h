@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _OS_PORT_CMSIS_RTOS_H
@@ -31,6 +31,14 @@
 
 //Dependencies
 #include "cmsis_os.h"
+
+//Use dynamic memory allocation for tasks
+#define OS_STATIC_TASK_SUPPORT DISABLED
+
+//Invalid task identifier
+#define OS_INVALID_TASK_ID NULL
+//Self task identifier
+#define OS_SELF_TASK_ID NULL
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
@@ -54,6 +62,8 @@
 
 //Task prologue
 #define osEnterTask()
+//Task epilogue
+#define osExitTask()
 //Interrupt service routine prologue
 #define osEnterIsr()
 //Interrupt service routine epilogue
@@ -66,10 +76,10 @@ extern "C" {
 
 
 /**
- * @brief Task object
+ * @brief Task identifier
  **/
 
-typedef void OsTask;
+typedef osThreadId OsTaskId;
 
 
 /**
@@ -123,10 +133,10 @@ void osInitKernel(void);
 void osStartKernel(void);
 
 //Task management
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
    void *param, size_t stackSize, int_t priority);
 
-void osDeleteTask(OsTask *task);
+void osDeleteTask(OsTaskId taskId);
 void osDelayTask(systime_t delay);
 void osSwitchTask(void);
 void osSuspendAllTasks(void);

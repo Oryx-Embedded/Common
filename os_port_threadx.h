@@ -1,6 +1,6 @@
 /**
- * @file os_port_chibios.h
- * @brief RTOS abstraction layer (ChibiOS/RT)
+ * @file os_port_threadx.h
+ * @brief RTOS abstraction layer (Azure RTOS ThreadX)
  *
  * @section License
  *
@@ -26,18 +26,21 @@
  * @version 2.1.2
  **/
 
-#ifndef _OS_PORT_CHIBIOS_H
-#define _OS_PORT_CHIBIOS_H
+#ifndef _OS_PORT_THREADX_H
+#define _OS_PORT_THREADX_H
 
 //Dependencies
-#include "ch.h"
+#include "tx_port.h"
+#include "tx_user.h"
+#include "tx_api.h"
+#include "tx_thread.h"
+#include "tx_semaphore.h"
+#include "tx_event_flags.h"
+#include "tx_mutex.h"
+#include "tx_initialize.h"
 
-//Use static or dynamic memory allocation for tasks
-#ifndef OS_STATIC_TASK_SUPPORT
-   #define OS_STATIC_TASK_SUPPORT DISABLED
-#elif (OS_STATIC_TASK_SUPPORT != ENABLED && OS_STATIC_TASK_SUPPORT != DISABLED)
-   #error OS_STATIC_TASK_SUPPORT parameter is not valid
-#endif
+//Use static memory allocation for tasks
+#define OS_STATIC_TASK_SUPPORT ENABLED
 
 //Invalid task identifier
 #define OS_INVALID_TASK_ID NULL
@@ -46,12 +49,12 @@
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
-   #define OS_TASK_PRIORITY_NORMAL NORMALPRIO
+   #define OS_TASK_PRIORITY_NORMAL (TX_MAX_PRIORITIES / 2)
 #endif
 
 //Task priority (high)
 #ifndef OS_TASK_PRIORITY_HIGH
-   #define OS_TASK_PRIORITY_HIGH HIGHPRIO
+   #define OS_TASK_PRIORITY_HIGH (OS_TASK_PRIORITY_NORMAL - 1)
 #endif
 
 //Milliseconds to system ticks
@@ -69,26 +72,9 @@
 //Task epilogue
 #define osExitTask()
 //Interrupt service routine prologue
-#define osEnterIsr() CH_IRQ_PROLOGUE(); chSysLockFromISR()
+#define osEnterIsr()
 //Interrupt service routine epilogue
-#define osExitIsr(flag) chSysUnlockFromISR(); CH_IRQ_EPILOGUE()
-
-//Check kernel version
-#if (CH_KERNEL_MAJOR < 3)
-   #define thread_t Thread
-   #define semaphore_t Semaphore
-   #define binary_semaphore_t BinarySemaphore
-   #define mutex_t Mutex
-   #define chThdTerminatedX chThdTerminated
-   #define chSemObjectInit chSemInit
-   #define chBSemObjectInit chBSemInit
-   #define chMtxObjectInit chMtxInit
-   #define chVTGetSystemTime chTimeNow
-   #define chSysLockFromISR chSysLockFromIsr
-   #define chSysUnlockFromISR chSysUnlockFromIsr
-   #define THD_WORKING_AREA_SIZE THD_WA_SIZE
-   #define MSG_OK RDY_OK
-#endif
+#define osExitIsr(flag)
 
 //C++ guard
 #ifdef __cplusplus
@@ -97,20 +83,24 @@ extern "C" {
 
 
 /**
+ * @brief Task function
+ **/
+
+typedef VOID (*OsTaskFunction)(ULONG param);
+
+
+/**
  * @brief Task identifier
  **/
 
-typedef thread_t *OsTaskId;
+typedef TX_THREAD *OsTaskId;
 
 
 /**
  * @brief Task control block
  **/
 
-typedef struct
-{
-   uint64_t dummy;
-} OsTaskTcb;
+typedef TX_THREAD OsTaskTcb;
 
 
 /**
@@ -124,21 +114,21 @@ typedef uint32_t OsStackType;
  * @brief Event object
  **/
 
-typedef binary_semaphore_t OsEvent;
+typedef TX_EVENT_FLAGS_GROUP OsEvent;
 
 
 /**
  * @brief Semaphore object
  **/
 
-typedef semaphore_t OsSemaphore;
+typedef TX_SEMAPHORE OsSemaphore;
 
 
 /**
  * @brief Mutex object
  **/
 
-typedef mutex_t OsMutex;
+typedef TX_MUTEX OsMutex;
 
 
 /**
@@ -153,9 +143,6 @@ void osInitKernel(void);
 void osStartKernel(void);
 
 //Task management
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority);
-
 OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
    void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
    int_t priority);

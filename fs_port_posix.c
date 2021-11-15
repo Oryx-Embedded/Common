@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Dependencies
@@ -35,7 +35,14 @@
 #include "error.h"
 #include "debug.h"
 #include <dirent.h>
-#include <direct.h>
+
+#ifdef _WIN32
+   #include <direct.h>
+#else
+   #include <sys/types.h>
+   #include <sys/stat.h>
+   #include <unistd.h>
+#endif
 
 
 /**
@@ -475,7 +482,11 @@ error_t fsCreateDir(const char_t *path)
       return ERROR_INVALID_PARAMETER;
 
    //Create a new directory
+#ifdef _WIN32
    ret = _mkdir(path);
+#else
+   ret = mkdir(path, 0777);
+#endif
 
    //On success, zero is returned
    if(ret == 0)
@@ -508,7 +519,11 @@ error_t fsRemoveDir(const char_t *path)
       return ERROR_INVALID_PARAMETER;
 
    //Remove the specified directory
+#ifdef _WIN32
    ret = _rmdir(path);
+#else
+   ret = rmdir(path);
+#endif
 
    //On success, zero is returned
    if(ret == 0)

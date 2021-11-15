@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -37,13 +37,6 @@
 #include "os_port_embos.h"
 #include "debug.h"
 
-//Forward declaration of functions
-void osIdleTaskHook(void);
-
-//Variables
-static OS_TASK *tcbTable[OS_PORT_MAX_TASKS];
-static void *stkTable[OS_PORT_MAX_TASKS];
-
 
 /**
  * @brief Kernel initialization
@@ -51,10 +44,6 @@ static void *stkTable[OS_PORT_MAX_TASKS];
 
 void osInitKernel(void)
 {
-   //Initialize tables
-   osMemset(tcbTable, 0, sizeof(tcbTable));
-   osMemset(stkTable, 0, sizeof(stkTable));
-
    //Disable interrupts
    OS_IncDI();
    //Kernel initialization
@@ -76,114 +65,39 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a static task
- * @param[out] task Pointer to the task structure
+ * @brief Create a task with statically allocated memory
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] tcb Pointer to the task control block
  * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return The function returns TRUE if the task was successfully
- *   created. Otherwise, FALSE is returned
+ * @return Task identifier referencing the newly created task
  **/
 
-bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *param, void *stack, size_t stackSize, int_t priority)
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority)
 {
    //Create a new task
-   OS_CreateTaskEx(task, name, priority, taskCode,
-      stack, stackSize * sizeof(uint_t), 1, param);
+   OS_CreateTaskEx(tcb, name, priority, taskCode, stack,
+      stackSize * sizeof(uint32_t), 1, param);
 
-   //The task was successfully created
-   return TRUE;
-}
-
-
-/**
- * @brief Create a new task
- * @param[in] name A name identifying the task
- * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
- **/
-
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
-{
-   uint_t i;
-   OS_TASK *task;
-   void *stack;
-
-   //Enter critical section
-   osSuspendAllTasks();
-
-   //Loop through TCB table
-   for(i = 0; i < OS_PORT_MAX_TASKS; i++)
-   {
-      //Check whether the current entry is free
-      if(tcbTable[i] == NULL)
-         break;
-   }
-
-   //Any entry available in the table?
-   if(i < OS_PORT_MAX_TASKS)
-   {
-      //Allocate a memory block to hold the task's control block
-      task = osAllocMem(sizeof(OS_TASK));
-
-      //Successful memory allocation?
-      if(task != NULL)
-      {
-         //Allocate a memory block to hold the task's stack
-         stack = osAllocMem(stackSize * sizeof(uint_t));
-
-         //Successful memory allocation?
-         if(stack != NULL)
-         {
-            //Create a new task
-            OS_CreateTaskEx(task, name, priority, taskCode,
-               stack, stackSize * sizeof(uint_t), 1, param);
-
-            //Save TCB base address
-            tcbTable[i] = task;
-            //Save stack base address
-            stkTable[i] = stack;
-         }
-         else
-         {
-            osFreeMem(task);
-            //Memory allocation failed
-            task = NULL;
-         }
-      }
-   }
-   else
-   {
-      //Memory allocation failed
-      task = NULL;
-   }
-
-   //Leave critical section
-   osResumeAllTasks();
-
-   //Return task pointer
-   return task;
+   //Return a handle to the newly created task
+   return tcb;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
    //Delete the specified task
-   OS_TerminateTask(task);
+   OS_TerminateTask((OS_TASK *) taskId);
 }
 
 
@@ -512,7 +426,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -532,7 +446,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -67,17 +67,16 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a new task
+ * @brief Create a task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
+ * @return Task identifier referencing the newly created task
  **/
 
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
    void *param, size_t stackSize, int_t priority)
 {
    osThreadId threadId;
@@ -87,7 +86,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    threadDef.pthread = (os_pthread) taskCode;
    threadDef.tpriority = (osPriority) priority;
    threadDef.instances = 1;
-   threadDef.stacksize = stackSize * sizeof(uint_t);
+   threadDef.stacksize = stackSize * sizeof(uint32_t);
 #elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
    threadDef.pthread = (os_pthread) taskCode;
    threadDef.attr.name = name;
@@ -95,7 +94,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    threadDef.attr.cb_mem = NULL;
    threadDef.attr.cb_size = 0;
    threadDef.attr.stack_mem = NULL;
-   threadDef.attr.stack_size = stackSize * sizeof(uint_t);
+   threadDef.attr.stack_size = stackSize * sizeof(uint32_t);
    threadDef.attr.priority = (osPriority_t) priority;
    threadDef.attr.tz_module = 0;
    threadDef.attr.reserved = 0;
@@ -106,7 +105,7 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    threadDef.attr.cb_mem = NULL;
    threadDef.attr.cb_size = 0;
    threadDef.attr.stack_mem = NULL;
-   threadDef.attr.stack_size = stackSize * sizeof(uint_t);
+   threadDef.attr.stack_size = stackSize * sizeof(uint32_t);
    threadDef.attr.priority = (osPriority_t) priority;
    threadDef.attr.tz_module = 0;
    threadDef.attr.reserved = 0;
@@ -120,27 +119,32 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
 
    //Create a new thread
    threadId = osThreadCreate(&threadDef, param);
+
    //Return a handle to the newly created thread
-   return (OsTask *) threadId;
+   return (OsTaskId) threadId;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
 #if (osCMSIS >= 0x20000)
    //Delete the specified thread
-   if(task == NULL)
+   if(taskId == OS_SELF_TASK_ID)
+   {
       osThreadExit();
+   }
    else
-      osThreadTerminate((osThreadId_t) task);
+   {
+      osThreadTerminate((osThreadId_t) taskId);
+   }
 #else
    //Delete the specified thread
-   osThreadTerminate((osThreadId) task);
+   osThreadTerminate((osThreadId) taskId);
 #endif
 }
 
@@ -289,7 +293,9 @@ void osResetEvent(OsEvent *event)
 {
 #if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    //Force the specified event to the nonsignaled state
-   while(osSemaphoreWait(event->id, 0) > 0);
+   while(osSemaphoreWait(event->id, 0) > 0)
+   {
+   }
 #else
    //Force the specified event to the nonsignaled state
    osSemaphoreWait(event->id, 0);
@@ -357,21 +363,33 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 #elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
    //Check return value
    if(ret > 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 #elif defined(osCMSIS_FreeRTOS)
    //Check return value
    if(ret > 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 #else
    //Check return value
    if(ret == osOK)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 #endif
 }
 
@@ -427,9 +445,13 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the returned semaphore ID is valid
    if(semaphore->id != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -493,15 +515,23 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 #if defined(osCMSIS_RTX) || defined(osCMSIS_FreeRTOS)
    //Check return value
    if(ret > 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 #else
    //Check return value
    if(ret == osOK)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 #endif
 }
 
@@ -550,9 +580,13 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the returned mutex ID is valid
    if(mutex->id != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -632,7 +666,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -656,7 +690,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -60,17 +60,16 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a new task
+ * @brief Create a task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
+ * @return Task identifier referencing the newly created task
  **/
 
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
    void *param, size_t stackSize, int_t priority)
 {
    osThreadId_t threadId;
@@ -82,30 +81,90 @@ OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
    threadAttr.cb_mem = NULL;
    threadAttr.cb_size = 0;
    threadAttr.stack_mem = NULL;
-   threadAttr.stack_size = stackSize * sizeof(uint_t);
+   threadAttr.stack_size = stackSize * sizeof(uint32_t);
    threadAttr.priority = (osPriority_t) priority;
    threadAttr.tz_module = 0;
    threadAttr.reserved = 0;
 
    //Create a new thread
    threadId = osThreadNew(taskCode, param, &threadAttr);
+
    //Return a handle to the newly created thread
-   return (OsTask *) threadId;
+   return (OsTaskId) threadId;
+}
+
+
+/**
+ * @brief Create a task with statically allocated memory
+ * @param[in] name A name identifying the task
+ * @param[in] taskCode Pointer to the task entry function
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] tcb Pointer to the task control block
+ * @param[in] stack Pointer to the stack
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return Task identifier referencing the newly created task
+ **/
+
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority)
+{
+   osThreadId_t threadId;
+   osThreadAttr_t threadAttr;
+
+   //Set thread attributes
+   threadAttr.name = name;
+   threadAttr.attr_bits = 0;
+#if defined(os_CMSIS_RTX)
+   threadAttr.cb_mem = &tcb->cb;
+   threadAttr.cb_size = sizeof(os_thread_t);
+   threadAttr.stack_mem = stack;
+   threadAttr.stack_size = stackSize * sizeof(uint32_t);
+#elif defined(osRtxVersionKernel)
+   threadAttr.cb_mem = &tcb->cb;
+   threadAttr.cb_size = sizeof(osRtxThread_t);
+   threadAttr.stack_mem = stack;
+   threadAttr.stack_size = stackSize * sizeof(uint32_t);
+#elif defined(configSUPPORT_STATIC_ALLOCATION)
+   threadAttr.cb_mem = &tcb->cb;
+   threadAttr.cb_size = sizeof(StaticTask_t);
+   threadAttr.stack_mem = stack;
+   threadAttr.stack_size = stackSize * sizeof(uint32_t);
+#else
+   threadAttr.cb_mem = NULL;
+   threadAttr.cb_size = 0;
+   threadAttr.stack_mem = NULL;
+   threadAttr.stack_size = 0;
+#endif
+   threadAttr.priority = (osPriority_t) priority;
+   threadAttr.tz_module = 0;
+   threadAttr.reserved = 0;
+
+   //Create a new thread
+   threadId = osThreadNew(taskCode, param, &threadAttr);
+
+   //Return a handle to the newly created thread
+   return (OsTaskId) threadId;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
    //Delete the specified thread
-   if(task == NULL)
+   if(taskId == OS_SELF_TASK_ID)
+   {
       osThreadExit();
+   }
    else
-      osThreadTerminate((osThreadId_t) task);
+   {
+      osThreadTerminate((osThreadId_t) taskId);
+   }
 }
 
 
@@ -193,9 +252,13 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the returned semaphore ID is valid
    if(event->id != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -267,9 +330,13 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
    //The function returns the event flags before clearing or an error code
    if(flags == 1)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -323,9 +390,13 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the returned semaphore ID is valid
    if(semaphore->id != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -371,9 +442,13 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //Check return value
    if(status == osOK)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -420,9 +495,13 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the returned mutex ID is valid
    if(mutex->id != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -490,7 +569,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -514,7 +593,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

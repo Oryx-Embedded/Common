@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -58,43 +58,78 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a new task
+ * @brief Create a task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
+ * @return Task identifier referencing the newly created task
  **/
 
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
    void *param, size_t stackSize, int_t priority)
 {
    portBASE_TYPE status;
-   TaskHandle_t task = NULL;
+   TaskHandle_t handle;
 
    //Create a new task
    status = xTaskCreate((TaskFunction_t) taskCode, name, stackSize, param,
-      priority, &task);
+      priority, &handle);
 
    //Check whether the task was successfully created
    if(status == pdPASS)
-      return task;
+   {
+      return (OsTaskId) handle;
+   }
    else
-      return NULL;
+   {
+      return OS_INVALID_TASK_ID;
+   }
+}
+
+
+/**
+ * @brief Create a task with statically allocated memory
+ * @param[in] name A name identifying the task
+ * @param[in] taskCode Pointer to the task entry function
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] tcb Pointer to the task control block
+ * @param[in] stack Pointer to the stack
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return Task identifier referencing the newly created task
+ **/
+
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority)
+{
+   TaskHandle_t handle;
+
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   //Create a new task
+   handle = xTaskCreateStatic((TaskFunction_t) taskCode, name, stackSize,
+      param, priority, stack, tcb);
+#else
+   //Not implemented
+   handle = NULL;
+#endif
+
+   //Return the handle referencing the newly created task
+   return (OsTaskId) handle;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
    //Delete the specified task
-   vTaskDelete((TaskHandle_t) task);
+   vTaskDelete((TaskHandle_t) taskId);
 }
 
 
@@ -170,9 +205,13 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the returned handle is valid
    if(event->handle != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -286,9 +325,13 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the returned handle is valid
    if(semaphore->handle != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -368,9 +411,13 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the returned handle is valid
    if(mutex->handle != NULL)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -438,7 +485,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -458,7 +505,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)
@@ -470,6 +517,26 @@ void osFreeMem(void *p)
       vPortFree(p);
    }
 }
+
+
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+
+/**
+ * @brief Provide the memory that is used by the idle task
+ **/
+
+void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
+   StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize)
+{
+   static StaticTask_t xIdleTaskTCB;
+   static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
+
+   *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
+   *ppxIdleTaskStackBuffer = uxIdleTaskStack;
+   *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}
+
+#endif
 
 
 #if 0

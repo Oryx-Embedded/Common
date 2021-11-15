@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -39,7 +39,6 @@
 
 //Variables
 static bool_t running = FALSE;
-static OsTask taskTable[OS_PORT_MAX_TASKS];
 
 
 /**
@@ -50,8 +49,6 @@ void osInitKernel(void)
 {
    //The scheduler is not running
    running = FALSE;
-   //Initialize task table
-   osMemset(taskTable, 0, sizeof(taskTable));
 }
 
 
@@ -70,115 +67,64 @@ void osStartKernel(OsInitTaskCode task)
 
 
 /**
- * @brief Create a static task
- * @param[out] task Pointer to the task structure
+ * @brief Create a task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return The function returns TRUE if the task was successfully
- *   created. Otherwise, FALSE is returned
+ * @return Task identifier referencing the newly created task
  **/
 
-bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *param, void *stack, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
 {
-   //Create a new task
-   task->tid = os_tsk_create_user_ex(taskCode, priority, stack,
-      stackSize * sizeof(uint_t), param);
+   OS_TID taskId;
 
-   //Check task identifier
-   if(task->tid != 0)
-      return TRUE;
-   else
-      return FALSE;
+   //Create a new task
+   taskId = os_tsk_create_ex(taskCode, priority, param);
+
+   //Return a handle to the newly created task
+   return (OsTaskId) taskId;
 }
 
 
 /**
- * @brief Create a new task
+ * @brief Create a task with statically allocated memory
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] tcb Pointer to the task control block
+ * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
+ * @return Task identifier referencing the newly created task
  **/
 
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority)
 {
-   uint_t i;
-   OsTask *task = NULL;
+   OS_TID taskId;
 
-   //Enter critical section
-   osSuspendAllTasks();
+   //Create a new task
+   taskId = os_tsk_create_user_ex(taskCode, priority, stack,
+      stackSize * sizeof(uint32_t), param);
 
-   //Loop through table
-   for(i = 0; i < OS_PORT_MAX_TASKS; i++)
-   {
-      //Check whether the current entry is free
-      if(!taskTable[i].tid)
-         break;
-   }
-
-   //Any entry available in the table?
-   if(i < OS_PORT_MAX_TASKS)
-   {
-      //Create a new task
-      taskTable[i].tid = os_tsk_create_ex(taskCode, priority, param);
-
-      //Check whether the task was successfully created
-      if(taskTable[i].tid != 0)
-         task = &taskTable[i];
-   }
-
-   //Leave critical section
-   osResumeAllTasks();
-
-   //Return a pointer to the newly created task
-   return task;
+   //Return a handle to the newly created task
+   return (OsTaskId) taskId;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
-   uint_t i;
-   OS_TID tid;
-
-   //Retrieve task ID
-   if(task == NULL)
-      tid = os_tsk_self();
-   else
-      tid = task->tid;
-
-   //Enter critical section
-   osSuspendAllTasks();
-
-   //Loop through table
-   for(i = 0; i < OS_PORT_MAX_TASKS; i++)
-   {
-      //Check current entry
-      if(taskTable[i].tid == tid)
-      {
-         //Release current entry
-         taskTable[i].tid = 0;
-      }
-   }
-
-   //Leave critical section
-   osResumeAllTasks();
-
    //Delete the currently running task?
-   if(task == NULL)
+   if(taskId == OS_SELF_TASK_ID)
    {
       //Kill ourselves
       os_tsk_delete_self();
@@ -186,7 +132,7 @@ void osDeleteTask(OsTask *task)
    else
    {
       //Delete the specified task
-      os_tsk_delete(tid);
+      os_tsk_delete((OS_TID) taskId);
    }
 }
 
@@ -466,9 +412,13 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //Check whether the specified semaphore is available
    if(res == OS_R_OK || res == OS_R_SEM)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -514,7 +464,7 @@ void osDeleteMutex(OsMutex *mutex)
 
 /**
  * @brief Acquire ownership of the specified mutex object
- * @param[in] mutex A handle to the mutex object
+ * @param[in] mutex Pointer to the mutex object
  **/
 
 void osAcquireMutex(OsMutex *mutex)
@@ -526,7 +476,7 @@ void osAcquireMutex(OsMutex *mutex)
 
 /**
  * @brief Release ownership of the specified mutex object
- * @param[in] mutex A handle to the mutex object
+ * @param[in] mutex Pointer to the mutex object
  **/
 
 void osReleaseMutex(OsMutex *mutex)
@@ -560,7 +510,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -584,7 +534,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

@@ -1,6 +1,6 @@
 /**
- * @file os_port_windows.c
- * @brief RTOS abstraction layer (Windows)
+ * @file os_port_threadx.c
+ * @brief RTOS abstraction layer (Azure RTOS ThreadX)
  *
  * @section License
  *
@@ -29,20 +29,15 @@
 //Switch to the appropriate trace level
 #define TRACE_LEVEL TRACE_LEVEL_OFF
 
-//Memory leaks detection
-#if (defined(_WIN32) && defined(_DEBUG))
-   #define _CRTDBG_MAP_ALLOC
-   #include <stdlib.h>
-   #include <crtdbg.h>
-#endif
-
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include <windows.h>
 #include "os_port.h"
-#include "os_port_windows.h"
+#include "os_port_threadx.h"
 #include "debug.h"
+
+//Global variable
+static TX_INTERRUPT_SAVE_AREA 
 
 
 /**
@@ -51,7 +46,8 @@
 
 void osInitKernel(void)
 {
-   //Not implemented
+   //Low-level initialization
+   _tx_initialize_low_level();
 }
 
 
@@ -61,31 +57,43 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-   //Not implemented
+   //Start the scheduler
+   tx_kernel_enter();
 }
 
 
 /**
- * @brief Create a task
+ * @brief Create a task with statically allocated memory
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] tcb Pointer to the task control block
+ * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority)
 {
-   void *handle;
+   UINT status;
 
-   //Create a new thread
-   handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) taskCode,
-      param, 0, NULL);
+   //Create a new task
+   status = tx_thread_create(tcb, (CHAR *) name, (OsTaskFunction) taskCode,
+      (ULONG) param, stack, stackSize * sizeof(uint32_t), priority, priority,
+      1, TX_AUTO_START);
 
-   //Return a pointer to the newly created thread
-   return (OsTaskId) handle;
+   //Check whether the task was successfully created
+   if(status == TX_SUCCESS)
+   {
+      return (OsTaskId) tcb;
+   }
+   else
+   {
+      return OS_INVALID_TASK_ID;
+   }
 }
 
 
@@ -96,17 +104,8 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
 
 void osDeleteTask(OsTaskId taskId)
 {
-   //Delete the calling thread?
-   if(taskId == OS_SELF_TASK_ID)
-   {
-      //Kill ourselves
-      ExitThread(0);
-   }
-   else
-   {
-      //Delete the specified thread
-      TerminateThread((HANDLE) taskId, 0);
-   }
+   //Delete the specified task
+   tx_thread_delete((TX_THREAD *) taskId);
 }
 
 
@@ -118,7 +117,7 @@ void osDeleteTask(OsTaskId taskId)
 void osDelayTask(systime_t delay)
 {
    //Delay the task for the specified duration
-   Sleep(delay);
+   tx_thread_sleep(OS_MS_TO_SYSTICKS(delay));
 }
 
 
@@ -128,7 +127,8 @@ void osDelayTask(systime_t delay)
 
 void osSwitchTask(void)
 {
-   //Not implemented
+   //Force a context switch
+   tx_thread_relinquish();
 }
 
 
@@ -138,7 +138,8 @@ void osSwitchTask(void)
 
 void osSuspendAllTasks(void)
 {
-   //Not implemented
+   //Suspend all tasks
+   TX_DISABLE
 }
 
 
@@ -148,7 +149,8 @@ void osSuspendAllTasks(void)
 
 void osResumeAllTasks(void)
 {
-   //Not implemented
+   //Resume all tasks
+   TX_RESTORE
 }
 
 
@@ -161,11 +163,13 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
-   //Create an event object
-   event->handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+   UINT status;
 
-   //Check whether the returned handle is valid
-   if(event->handle != NULL)
+   //Create an event object
+   status = tx_event_flags_create(event, "EVENT");
+
+   //Check whether the event was successfully created
+   if(status == TX_SUCCESS)
    {
       return TRUE;
    }
@@ -183,11 +187,11 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   //Make sure the handle is valid
-   if(event->handle != NULL)
+   //Make sure the event object is valid
+   if(event->tx_event_flags_group_id == TX_EVENT_FLAGS_ID)
    {
       //Properly dispose the event object
-      CloseHandle(event->handle);
+      tx_event_flags_delete(event);
    }
 }
 
@@ -200,7 +204,7 @@ void osDeleteEvent(OsEvent *event)
 void osSetEvent(OsEvent *event)
 {
    //Set the specified event to the signaled state
-   SetEvent(event->handle);
+   tx_event_flags_set(event, 1, TX_OR);
 }
 
 
@@ -211,8 +215,10 @@ void osSetEvent(OsEvent *event)
 
 void osResetEvent(OsEvent *event)
 {
+   ULONG actualFlags;
+
    //Force the specified event to the nonsignaled state
-   ResetEvent(event->handle);
+   tx_event_flags_get(event, 1, TX_AND_CLEAR, &actualFlags, 0);
 }
 
 
@@ -226,8 +232,26 @@ void osResetEvent(OsEvent *event)
 
 bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
-   //Wait until the specified event is in the signaled state
-   if(WaitForSingleObject(event->handle, timeout) == WAIT_OBJECT_0)
+   UINT status;
+   ULONG actualFlags;
+
+   //Wait until the specified event is in the signaled state or the timeout
+   //interval elapses
+   if(timeout == INFINITE_DELAY)
+   {
+      //Infinite timeout period
+      status = tx_event_flags_get(event, 1, TX_OR_CLEAR, &actualFlags,
+         TX_WAIT_FOREVER);
+   }
+   else
+   {
+      //Wait until the specified event becomes set
+      status = tx_event_flags_get(event, 1, TX_OR_CLEAR, &actualFlags,
+         OS_MS_TO_SYSTICKS(timeout));
+   }
+
+   //Check whether the specified event is set
+   if(status == TX_SUCCESS)
    {
       return TRUE;
    }
@@ -247,7 +271,10 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
 bool_t osSetEventFromIsr(OsEvent *event)
 {
-   //Not implemented
+   //Set the specified event to the signaled state
+   tx_event_flags_set(event, 1, TX_OR);
+
+   //The return value is not relevant
    return FALSE;
 }
 
@@ -263,11 +290,13 @@ bool_t osSetEventFromIsr(OsEvent *event)
 
 bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
-   //Create a semaphore object
-   semaphore->handle = CreateSemaphore(NULL, count, count, NULL);
+   UINT status;
 
-   //Check whether the returned handle is valid
-   if(semaphore->handle != NULL)
+   //Create a semaphore object
+   status = tx_semaphore_create(semaphore, "SEMAPHORE", count);
+
+   //Check whether the semaphore was successfully created
+   if(status == TX_SUCCESS)
    {
       return TRUE;
    }
@@ -285,11 +314,11 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
 void osDeleteSemaphore(OsSemaphore *semaphore)
 {
-   //Make sure the handle is valid
-   if(semaphore->handle != NULL)
+   //Make sure the semaphore object is valid
+   if(semaphore->tx_semaphore_id == TX_SEMAPHORE_ID)
    {
       //Properly dispose the semaphore object
-      CloseHandle(semaphore->handle);
+      tx_semaphore_delete(semaphore);
    }
 }
 
@@ -304,8 +333,22 @@ void osDeleteSemaphore(OsSemaphore *semaphore)
 
 bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 {
-   //Wait until the specified semaphore becomes available
-   if(WaitForSingleObject(semaphore->handle, timeout) == WAIT_OBJECT_0)
+   UINT status;
+
+   //Wait until the semaphore is available or the timeout interval elapses
+   if(timeout == INFINITE_DELAY)
+   {
+      //Infinite timeout period
+      status = tx_semaphore_get(semaphore, TX_WAIT_FOREVER);
+   }
+   else
+   {
+      //Wait until the specified semaphore becomes available
+      status = tx_semaphore_get(semaphore, OS_MS_TO_SYSTICKS(timeout));
+   }
+
+   //Check whether the specified semaphore is available
+   if(status == TX_SUCCESS)
    {
       return TRUE;
    }
@@ -324,7 +367,7 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 void osReleaseSemaphore(OsSemaphore *semaphore)
 {
    //Release the semaphore
-   ReleaseSemaphore(semaphore->handle, 1, NULL);
+   tx_semaphore_put(semaphore);
 }
 
 
@@ -337,11 +380,13 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
-   //Create a mutex object
-   mutex->handle = CreateMutex(NULL, FALSE, NULL);
+   UINT status;
 
-   //Check whether the returned handle is valid
-   if(mutex->handle != NULL)
+   //Create a mutex object
+   status = tx_mutex_create(mutex, "MUTEX", TX_NO_INHERIT);
+
+   //Check whether the mutex was successfully created
+   if(status == TX_SUCCESS)
    {
       return TRUE;
    }
@@ -359,11 +404,11 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-   //Make sure the handle is valid
-   if(mutex->handle != NULL)
+   //Make sure the mutex object is valid
+   if(mutex->tx_mutex_id == TX_MUTEX_ID)
    {
       //Properly dispose the mutex object
-      CloseHandle(mutex->handle);
+      tx_mutex_delete(mutex);
    }
 }
 
@@ -376,7 +421,7 @@ void osDeleteMutex(OsMutex *mutex)
 void osAcquireMutex(OsMutex *mutex)
 {
    //Obtain ownership of the mutex object
-   WaitForSingleObject(mutex->handle, INFINITE);
+   tx_mutex_get(mutex, TX_WAIT_FOREVER);
 }
 
 
@@ -388,7 +433,7 @@ void osAcquireMutex(OsMutex *mutex)
 void osReleaseMutex(OsMutex *mutex)
 {
    //Release ownership of the mutex object
-   ReleaseMutex(mutex->handle);
+   tx_mutex_put(mutex);
 }
 
 
@@ -399,8 +444,13 @@ void osReleaseMutex(OsMutex *mutex)
 
 systime_t osGetSystemTime(void)
 {
+   systime_t time;
+
    //Get current tick count
-   return GetTickCount();
+   time = tx_time_get();
+
+   //Convert system ticks to milliseconds
+   return OS_SYSTICKS_TO_MS(time);
 }
 
 
@@ -413,8 +463,20 @@ systime_t osGetSystemTime(void)
 
 __weak void *osAllocMem(size_t size)
 {
+   void *p;
+
+   //Enter critical section
+   osSuspendAllTasks();
    //Allocate a memory block
-   return malloc(size);
+   p = malloc(size);
+   //Leave critical section
+   osResumeAllTasks();
+
+   //Debug message
+   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n", size, (uintptr_t) p);
+
+   //Return a pointer to the newly allocated memory block
+   return p;
 }
 
 
@@ -425,6 +487,17 @@ __weak void *osAllocMem(size_t size)
 
 __weak void osFreeMem(void *p)
 {
-   //Free memory block
-   free(p);
+   //Make sure the pointer is valid
+   if(p != NULL)
+   {
+      //Debug message
+      TRACE_DEBUG("Freeing memory at 0x%08" PRIXPTR "\r\n", (uintptr_t) p);
+
+      //Enter critical section
+      osSuspendAllTasks();
+      //Free memory block
+      free(p);
+      //Leave critical section
+      osResumeAllTasks();
+   }
 }

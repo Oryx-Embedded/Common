@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _OS_PORT_H
@@ -75,15 +75,15 @@
 //Maximum delay
 #define MAX_DELAY (INFINITE_DELAY / 2)
 
-//Invalid handle value
-#define OS_INVALID_HANDLE NULL
-
 //No RTOS?
 #if defined(USE_NO_RTOS)
    #include "os_port_none.h"
 //ChibiOS/RT port?
 #elif defined(USE_CHIBIOS)
    #include "os_port_chibios.h"
+//CMX-RTX port?
+#elif defined(USE_CMX_RTX)
+   #include "os_port_cmx_rtx.h"
 //CMSIS-RTOS port?
 #elif defined(USE_CMSIS_RTOS)
    #include "os_port_cmsis_rtos.h"
@@ -96,6 +96,9 @@
 //SafeRTOS port?
 #elif defined(USE_SAFERTOS)
    #include "os_port_safertos.h"
+//Azure RTOS ThreadX port?
+#elif defined(USE_THREADX)
+   #include "os_port_threadx.h"
 //Keil RTX port?
 #elif defined(USE_RTX)
    #include "os_port_rtx.h"
@@ -105,9 +108,6 @@
 //Micrium uC/OS-III port?
 #elif defined(USE_UCOS3)
    #include "os_port_ucos3.h"
-//Nut/OS port?
-#elif defined(USE_NUTOS)
-   #include "os_port_nutos.h"
 //Segger embOS port?
 #elif defined(USE_EMBOS)
    #include "os_port_embos.h"
@@ -283,4 +283,10 @@
 #endif
 
 #endif
+
+//Task object (deprecated)
+#define OsTask void
+//Invalid handle value (deprecated)
+#define OS_INVALID_HANDLE OS_INVALID_TASK_ID
+
 #endif

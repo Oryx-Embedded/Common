@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Dependencies
@@ -178,7 +178,7 @@ error_t strSafeCopy(char_t *dest, const char_t *src, size_t destSize)
    n = MIN(n, destSize - 1);
 
    //Copy the string
-   osStrncpy(dest, src, n);
+   osMemcpy(dest, src, n);
    //Properly terminate the string with a NULL character
    dest[n] = '\0';
 

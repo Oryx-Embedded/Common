@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _OS_PORT_UCOS2_H
@@ -32,12 +32,13 @@
 //Dependencies
 #include "ucos_ii.h"
 
-//Maximum number of tasks that can be dynamically created
-#ifndef OS_PORT_MAX_TASKS
-   #define OS_PORT_MAX_TASKS 16
-#elif (OS_PORT_MAX_TASKS < 1)
-   #error OS_PORT_MAX_TASKS parameter is not valid
-#endif
+//Use static memory allocation for tasks
+#define OS_STATIC_TASK_SUPPORT ENABLED
+
+//Invalid task identifier
+#define OS_INVALID_TASK_ID 255
+//Self task identifier
+#define OS_SELF_TASK_ID OS_PRIO_SELF
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
@@ -61,6 +62,8 @@
 
 //Task prologue
 #define osEnterTask()
+//Task epilogue
+#define osExitTask()
 //Interrupt service routine prologue
 #define osEnterIsr() OSIntEnter()
 //Interrupt service routine epilogue
@@ -73,13 +76,27 @@ extern "C" {
 
 
 /**
- * @brief Task object
+ * @brief Task identifier
+ **/
+
+typedef INT8U OsTaskId;
+
+
+/**
+ * @brief Task control block
  **/
 
 typedef struct
 {
-   INT8U prio;
-} OsTask;
+   uint32_t dummy;
+} OsTaskTcb;
+
+
+/**
+ * @brief Stack data type
+ **/
+
+typedef OS_STK OsStackType;
 
 
 /**
@@ -124,13 +141,11 @@ void osInitKernel(void);
 void osStartKernel(void);
 
 //Task management
-bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *param, void *stack, size_t stackSize, int_t priority);
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority);
 
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority);
-
-void osDeleteTask(OsTask *task);
+void osDeleteTask(OsTaskId taskId);
 void osDelayTask(systime_t delay);
 void osSwitchTask(void);
 void osSuspendAllTasks(void);

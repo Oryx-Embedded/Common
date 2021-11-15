@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -37,10 +37,6 @@
 #include "os_port_chibios.h"
 #include "debug.h"
 
-//Variables
-static OsTask taskTable[OS_PORT_MAX_TASKS];
-static uint_t *waTable[OS_PORT_MAX_TASKS];
-
 
 /**
  * @brief Kernel initialization
@@ -48,10 +44,6 @@ static uint_t *waTable[OS_PORT_MAX_TASKS];
 
 void osInitKernel(void)
 {
-   //Initialize tables
-   osMemset(taskTable, 0, sizeof(taskTable));
-   osMemset(waTable, 0, sizeof(waTable));
-
    //Kernel initialization
    chSysInit();
 }
@@ -69,129 +61,72 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a static task
- * @param[out] task Pointer to the task structure
+ * @brief Create a task
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return The function returns TRUE if the task was successfully
- *   created. Otherwise, FALSE is returned
+ * @return Task identifier referencing the newly created task
  **/
 
-bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
-   void *param, void *stack, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
 {
-   //Compute the size of the working area in bytes
-   stackSize *= sizeof(uint_t);
+   thread_t *handle;
 
    //Create a new task
-   task->tp = chThdCreateStatic(stack, stackSize,
-      priority, (tfunc_t) taskCode, param);
+   handle = chThdCreateFromHeap(0, THD_WORKING_AREA_SIZE(stackSize),
+      priority, taskCode, param);
 
-   //Check whether the task was successfully created
-   if(task->tp != NULL)
-      return TRUE;
-   else
-      return FALSE;
+   //Return a handle to the newly created thread
+   return (OsTaskId) handle;
 }
 
 
 /**
- * @brief Create a new task
+ * @brief Create a task with statically allocated memory
  * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
  * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] tcb Pointer to the task control block
+ * @param[in] stack Pointer to the stack
  * @param[in] stackSize The initial size of the stack, in words
  * @param[in] priority The priority at which the task should run
- * @return If the function succeeds, the return value is a pointer to the
- *   new task. If the function fails, the return value is NULL
+ * @return Task identifier referencing the newly created task
  **/
 
-OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
+   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
+   int_t priority)
 {
-   uint_t i;
-   void *wa;
-   OsTask *task = NULL;
+   thread_t *handle;
 
-   //Compute the size of the stack in bytes
-   stackSize *= sizeof(uint_t);
+   //Create a new task
+   handle = chThdCreateStatic(stack, stackSize * sizeof(uint32_t), priority,
+      (tfunc_t) taskCode, param);
 
-   //Allocate a memory block to hold the working area
-   wa = osAllocMem(THD_WORKING_AREA_SIZE(stackSize));
-
-   //Successful memory allocation?
-   if(wa != NULL)
-   {
-      //Enter critical section
-      chSysLock();
-
-      //Loop through task table
-      for(i = 0; i < OS_PORT_MAX_TASKS; i++)
-      {
-         //Check whether the current entry is free
-         if(taskTable[i].tp == NULL)
-            break;
-      }
-
-      //Any entry available in the table?
-      if(i < OS_PORT_MAX_TASKS)
-      {
-         //Create a new task
-         taskTable[i].tp = chThdCreateI(wa, THD_WORKING_AREA_SIZE(stackSize),
-            priority, (tfunc_t) taskCode, param);
-
-         //Check whether the task was successfully created
-         if(taskTable[i].tp != NULL)
-         {
-            //Insert the newly created task in the ready list
-            chSchWakeupS(taskTable[i].tp, MSG_OK);
-
-            //Save task pointer
-            task = &taskTable[i];
-            //Save working area base address
-            waTable[i] = wa;
-
-            //Leave critical section
-            chSysUnlock();
-         }
-         else
-         {
-            //Leave critical section
-            chSysUnlock();
-            //Clean up side effects
-            osFreeMem(wa);
-         }
-      }
-      else
-      {
-         //Leave critical section
-         chSysUnlock();
-         //No entry available in the table
-         osFreeMem(wa);
-      }
-   }
-
-   //Return a pointer to the newly created task
-   return task;
+   //Return a handle to the newly created thread
+   return (OsTaskId) handle;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] task Pointer to the task to be deleted
+ * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTask *task)
+void osDeleteTask(OsTaskId taskId)
 {
    //Delete the specified task
-   if(task == NULL)
+   if(taskId == OS_SELF_TASK_ID)
+   {
       chThdExit(MSG_OK);
+   }
    else
-      chThdTerminate(task->tp);
+   {
+      chThdTerminate((thread_t *) taskId);
+   }
 }
 
 
@@ -506,7 +441,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-void *osAllocMem(size_t size)
+__weak void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -526,7 +461,7 @@ void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-void osFreeMem(void *p)
+__weak void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)
@@ -546,24 +481,5 @@ void osFreeMem(void *p)
 
 void osIdleLoopHook(void)
 {
-   uint_t i;
-
-   //Loop through task table
-   for(i = 0; i < OS_PORT_MAX_TASKS; i++)
-   {
-      //Check whether current entry is used
-      if(taskTable[i].tp != NULL)
-      {
-         //Wait for task termination
-         if(chThdTerminatedX(taskTable[i].tp))
-         {
-            //Free working area
-            osFreeMem(waTable[i]);
-
-            //Mark the entry as free
-            waTable[i] = NULL;
-            taskTable[i].tp = NULL;
-         }
-      }
-   }
+   //Not implemented
 }
