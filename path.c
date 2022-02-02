@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Dependencies
@@ -136,7 +136,7 @@ void pathCopy(char_t *dest, const char_t *src, size_t maxLen)
    n = MIN(n, maxLen);
 
    //Copy the string
-   osStrncpy(dest, src, n);
+   osMemcpy(dest, src, n);
    //Properly terminate the string with a NULL character
    dest[n] = '\0';
 }
@@ -390,7 +390,7 @@ void pathCombine(char_t *path, const char_t *more, size_t maxLen)
       //Limit the number of characters to be copied
       n2 = MIN(n2, maxLen - n1);
       //Concatenate the resulting string
-      osStrncpy(path + n1, more, n2);
+      osMemcpy(path + n1, more, n2);
       //Properly terminate the string with a NULL character
       path[n1 + n2] = '\0';
    }

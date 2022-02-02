@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 #ifndef _OS_PORT_SYS_BIOS_H
@@ -69,6 +69,11 @@
    #define OS_SYSTICKS_TO_MS(n) (n)
 #endif
 
+//Retrieve 64-bit system time (not implemented)
+#ifndef osGetSystemTime64
+   #define osGetSystemTime64() osGetSystemTime()
+#endif
+
 //Task prologue
 #define osEnterTask()
 //Task epilogue
@@ -82,6 +87,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/**
+ * @brief System time
+ **/
+
+typedef uint32_t systime_t;
 
 
 /**

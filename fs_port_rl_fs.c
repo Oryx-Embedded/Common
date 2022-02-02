@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Dependencies
@@ -170,10 +170,6 @@ error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
 
    //Any error to report?
    if(status != fsOK)
-      return ERROR_FAILURE;
-
-   //Valid file?
-   if((fileInfo.attrib & FS_FAT_ATTR_DIRECTORY) != 0)
       return ERROR_FAILURE;
 
    //Clear file attributes

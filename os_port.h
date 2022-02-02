@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 #ifndef _OS_PORT_H
@@ -114,6 +114,9 @@
 //TI SYS/BIOS port?
 #elif defined(USE_SYS_BIOS)
    #include "os_port_sys_bios.h"
+//Zephyr port?
+#elif defined(USE_ZEPHYR)
+   #include "os_port_zephyr.h"
 //Windows port?
 #elif defined(_WIN32)
    #include "os_port_windows.h"

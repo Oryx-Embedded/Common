@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -222,8 +222,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
    bool_t ret;
 
-   //Wait until the specified event is in the signaled
-   //state or the timeout interval elapses
+   //Wait until the specified event is in the signaled state or the timeout
+   //interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
@@ -426,7 +426,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak void *osAllocMem(size_t size)
+__weak_func void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -434,7 +434,8 @@ __weak void *osAllocMem(size_t size)
    p = OS_malloc(size);
 
    //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n", size, (uintptr_t) p);
+   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
+      size, (uintptr_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -446,7 +447,7 @@ __weak void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak void osFreeMem(void *p)
+__weak_func void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)
