@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Dependencies
@@ -41,7 +41,7 @@
  * @return Error code
  **/
 
-error_t fsInit(void)
+__weak_func error_t fsInit(void)
 {
    error_t error;
    fsStatus status;
