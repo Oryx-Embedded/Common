@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _ERROR_H
@@ -270,6 +270,7 @@ typedef enum
    ERROR_REQUEST_REJECTED,
 
    ERROR_INVALID_CHANNEL,
+   ERROR_INVALID_GROUP,
    ERROR_UNKNOWN_SERVICE,
    ERROR_UNKNOWN_REQUEST,
    ERROR_FLOW_CONTROL,
@@ -290,6 +291,8 @@ typedef enum
    ERROR_ALREADY_RUNNING,
    ERROR_UNKOWN_KEY,
    ERROR_UNKNOWN_TYPE,
+   ERROR_UNSUPPORTED_OPTION,
+   ERROR_INVALID_SPI,
 
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH

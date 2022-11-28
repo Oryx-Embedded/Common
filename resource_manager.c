@@ -23,12 +23,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Dependencies
 #include <string.h>
 #include "os_port.h"
+#include "cpu_endian.h"
 #include "resource_manager.h"
 #include "debug.h"
 
@@ -48,24 +49,29 @@ error_t resGetData(const char_t *path, const uint8_t **data, size_t *length)
    ResHeader *resHeader = (ResHeader *) res;
 
    //Make sure the resource data is valid
-   if(resHeader->totalSize < sizeof(ResHeader))
+   if(letoh32(resHeader->totalSize) < sizeof(ResHeader))
       return ERROR_INVALID_RESOURCE;
 
    //Retrieve the length of the root directory
-   dirLength = resHeader->rootEntry.dataLength;
+   dirLength = letoh32(resHeader->rootEntry.dataLength);
    //Point to the contents of the root directory
-   resEntry = (ResEntry *) (res + resHeader->rootEntry.dataStart);
+   resEntry = (ResEntry *) (res + letoh32(resHeader->rootEntry.dataStart));
 
    //Parse the entire path
    for(found = FALSE; !found && path[0] != '\0'; path += n + 1)
    {
       //Search for the separator that terminates the current token
-      for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++);
+      for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++)
+      {
+      }
 
       if(n == 0 && path[n] != '\0')
       {
          path++;
-         for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++);
+
+         for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++)
+         {
+         }
       }
 
       //Loop through the directory
@@ -85,9 +91,9 @@ error_t resGetData(const char_t *path, const uint8_t **data, size_t *length)
             if(resEntry->type == RES_TYPE_DIR)
             {
                //Save the length of the directory
-               dirLength = resEntry->dataLength;
+               dirLength = letoh32(resEntry->dataLength);
                //Point to the contents of the directory
-               resEntry = (ResEntry *) (res + resEntry->dataStart);
+               resEntry = (ResEntry *) (res + letoh32(resEntry->dataStart));
             }
             else
             {
@@ -105,8 +111,10 @@ error_t resGetData(const char_t *path, const uint8_t **data, size_t *length)
          {
             //Remaining bytes to process
             dirLength -= sizeof(ResEntry) + resEntry->nameLength;
+
             //Point to the next entry
-            resEntry = (ResEntry *) ((uint8_t *) resEntry + sizeof(ResEntry) + resEntry->nameLength);
+            resEntry = (ResEntry *) ((uint8_t *) resEntry + sizeof(ResEntry) +
+               resEntry->nameLength);
          }
       }
 
@@ -123,9 +131,9 @@ error_t resGetData(const char_t *path, const uint8_t **data, size_t *length)
       return ERROR_NOT_FOUND;
 
    //Return the location of the specified resource
-   *data = res + resEntry->dataStart;
+   *data = res + letoh32(resEntry->dataStart);
    //Return the length of the resource
-   *length = resEntry->dataLength;
+   *length = letoh32(resEntry->dataLength);
 
    //Successful processing
    return NO_ERROR;
@@ -144,13 +152,13 @@ error_t resSearchFile(const char_t *path, DirEntry *dirEntry)
    ResHeader *resHeader = (ResHeader *) res;
 
    //Make sure the resource data is valid
-   if(resHeader->totalSize < sizeof(ResHeader))
+   if(letoh32(resHeader->totalSize) < sizeof(ResHeader))
       return ERROR_INVALID_RESOURCE;
 
    //Retrieve the length of the root directory
-   length = resHeader->rootEntry.dataLength;
+   length = letoh32(resHeader->rootEntry.dataLength);
    //Point to the contents of the root directory
-   resEntry = (ResEntry *) (res + resHeader->rootEntry.dataStart);
+   resEntry = (ResEntry *) (res + letoh32(resHeader->rootEntry.dataStart));
 
    //Parse the entire path
    for(found = FALSE; !found && path[0] != '\0'; path += n + 1)
@@ -181,9 +189,9 @@ error_t resSearchFile(const char_t *path, DirEntry *dirEntry)
             if(resEntry->type == RES_TYPE_DIR)
             {
                //Save the length of the directory
-               length = resEntry->dataLength;
+               length = letoh32(resEntry->dataLength);
                //Point to the contents of the directory
-               resEntry = (ResEntry *) (res + resEntry->dataStart);
+               resEntry = (ResEntry *) (res + letoh32(resEntry->dataStart));
             }
             else
             {
@@ -201,8 +209,10 @@ error_t resSearchFile(const char_t *path, DirEntry *dirEntry)
          {
             //Remaining bytes to process
             length -= sizeof(ResEntry) + resEntry->nameLength;
+
             //Point to the next entry
-            resEntry = (ResEntry *) ((uint8_t *) resEntry + sizeof(ResEntry) + resEntry->nameLength);
+            resEntry = (ResEntry *) ((uint8_t *) resEntry + sizeof(ResEntry) +
+               resEntry->nameLength);
          }
       }
 
@@ -218,8 +228,8 @@ error_t resSearchFile(const char_t *path, DirEntry *dirEntry)
    //Return information about the file
    dirEntry->type = resEntry->type;
    dirEntry->volume = 0;
-   dirEntry->dataStart = resEntry->dataStart;
-   dirEntry->dataLength = resEntry->dataLength;
+   dirEntry->dataStart = letoh32(resEntry->dataStart);
+   dirEntry->dataLength = letoh32(resEntry->dataLength);
    dirEntry->nameLength = 0; //resEntry->nameLength;
    //Copy the filename
    //osStrncpy(dirEntry->name, resEntry->name, dirEntry->nameLength);
