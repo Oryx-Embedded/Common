@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Dependencies
@@ -81,7 +81,7 @@ char_t *strTrimWhitespace(char_t *s)
    char_t *result;
 
    //Trim whitespace from the beginning
-   while(isspace((uint8_t) *s))
+   while(osIsspace(*s))
    {
       s++;
    }
@@ -89,11 +89,10 @@ char_t *strTrimWhitespace(char_t *s)
    //Save the current position
    result = s;
 
-   //Search for the first whitespace to remove
-   //at the end of the string
+   //Search for the first whitespace to remove at the end of the string
    for(end = NULL; *s != '\0'; s++)
    {
-      if(!isspace((uint8_t) *s))
+      if(!osIsspace(*s))
          end = NULL;
       else if(!end)
          end = s;
@@ -103,8 +102,7 @@ char_t *strTrimWhitespace(char_t *s)
    if(end)
       *end = '\0';
 
-   //Return the string with leading and
-   //trailing whitespace omitted
+   //Return the string with leading and trailing whitespace omitted
    return result;
 }
 
@@ -118,11 +116,10 @@ void strRemoveTrailingSpace(char_t *s)
 {
    char_t *end;
 
-   //Search for the first whitespace to remove
-   //at the end of the string
+   //Search for the first whitespace to remove at the end of the string
    for(end = NULL; *s != '\0'; s++)
    {
-      if(!isspace((uint8_t) *s))
+      if(!osIsspace(*s))
          end = NULL;
       else if(!end)
          end = s;

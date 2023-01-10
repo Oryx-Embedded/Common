@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -33,6 +33,11 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <inttypes.h>
+
+//ARM compiler V6?
+#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+   #include <stdarg.h>
+#endif
 
 //C++ guard
 #ifdef __cplusplus
@@ -124,6 +129,7 @@ typedef unsigned int uint_t;
 
 //ARM compiler V6?
 #if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+   int vsnprintf(char *dest, size_t size, const char *format, va_list ap);
    char *strtok_r(char *s, const char *delim, char **last);
 //GCC compiler?
 #elif defined(__GNUC__)
