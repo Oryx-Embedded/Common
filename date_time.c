@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Dependencies
@@ -206,7 +206,9 @@ void convertUnixTimeToDate(time_t t, DateTime *date)
 
    //Negative Unix time values are not supported
    if(t < 1)
+   {
       t = 0;
+   }
 
    //Clear milliseconds
    date->milliseconds = 0;
@@ -260,7 +262,7 @@ time_t convertDateToUnixTime(const DateTime *date)
    uint_t y;
    uint_t m;
    uint_t d;
-   uint32_t t;
+   time_t t;
 
    //Year
    y = date->year;

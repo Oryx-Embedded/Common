@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Dependencies
@@ -81,6 +81,14 @@
    #define FATFS_REVISON FATFS_R(0, 13, b)
 #elif (FF_DEFINED == 86604)
    #define FATFS_REVISON FATFS_R(0, 13, c)
+#elif (FF_DEFINED == 86606)
+   #define FATFS_REVISON FATFS_R(0, 14, 0)
+#elif (FF_DEFINED == 80196)
+   #define FATFS_REVISON FATFS_R(0, 14, a)
+#elif (FF_DEFINED == 86631)
+   #define FATFS_REVISON FATFS_R(0, 14, b)
+#elif (FF_DEFINED == 80286)
+   #define FATFS_REVISON FATFS_R(0, 15, 0)
 #else
    #define FATFS_REVISON FATFS_R(0, 0, 0)
 #endif

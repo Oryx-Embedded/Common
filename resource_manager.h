@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _RESOURCE_MANAGER_H
@@ -60,38 +60,38 @@ typedef enum
  * @brief Resource entry
  **/
 
-typedef __start_packed struct
+typedef __packed_struct
 {
    char_t type;
    uint32_t dataStart;
    uint32_t dataLength;
    uint8_t nameLength;
    char_t name[];
-} __end_packed ResEntry;
+} ResEntry;
 
 
 /**
  * @brief Root entry
  **/
 
-typedef __start_packed struct
+typedef __packed_struct
 {
    char_t type;
    uint32_t dataStart;
    uint32_t dataLength;
    uint8_t nameLength;
-} __end_packed ResRootEntry;
+} ResRootEntry;
 
 
 /**
  * @brief Resource header
  **/
 
-typedef __start_packed struct
+typedef __packed_struct
 {
    uint32_t totalSize;
    ResRootEntry rootEntry;
-} __end_packed ResHeader;
+} ResHeader;
 
 
 //CodeWarrior or Win32 compiler?

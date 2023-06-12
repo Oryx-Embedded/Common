@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _ERROR_H
@@ -298,6 +298,11 @@ typedef enum
    ERROR_POLICY_FAILURE,
    ERROR_INVALID_PROPOSAL,
    ERROR_INVALID_SELECTOR,
+
+   ERROR_WRONG_NONCE,
+   ERROR_WRONG_ISSUER,
+   ERROR_RESPONSE_EXPIRED,
+   ERROR_CRL_EXPIRED,
 
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH

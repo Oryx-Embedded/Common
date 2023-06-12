@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _OS_PORT_H
@@ -111,6 +111,9 @@
 //Micrium uC/OS-III port?
 #elif defined(USE_UCOS3)
    #include "os_port_ucos3.h"
+//PX5 port?
+#elif defined(USE_PX5)
+   #include "os_port_px5.h"
 //Segger embOS port?
 #elif defined(USE_EMBOS)
    #include "os_port_embos.h"
