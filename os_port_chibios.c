@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +36,14 @@
 #include "os_port.h"
 #include "os_port_chibios.h"
 #include "debug.h"
+
+//Default task parameters
+const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+{
+   NULL,       //Stack
+   256,        //Size of the stack
+   NORMALPRIO  //Task priority
+};
 
 
 /**
@@ -62,51 +70,34 @@ void osStartKernel(void)
 
 /**
  * @brief Create a task
- * @param[in] name A name identifying the task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
    thread_t *handle;
 
-   //Create a new task
-   handle = chThdCreateFromHeap(0, THD_WORKING_AREA_SIZE(stackSize),
-      priority, taskCode, param);
+   //Static allocation?
+   if(params->stack != NULL)
+   {
+      //Create a new task
+      handle = chThdCreateStatic(params->stack,
+         params->stackSize * sizeof(uint32_t), params->priority,
+         (tfunc_t) taskCode, arg);
+   }
+   else
+   {
+      //Create a new task
+      handle = chThdCreateFromHeap(0, THD_WORKING_AREA_SIZE(params->stackSize),
+         params->priority, taskCode, arg);
+   }
 
-   //Return a handle to the newly created thread
-   return (OsTaskId) handle;
-}
-
-
-/**
- * @brief Create a task with statically allocated memory
- * @param[in] name A name identifying the task
- * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] tcb Pointer to the task control block
- * @param[in] stack Pointer to the stack
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
- * @return Task identifier referencing the newly created task
- **/
-
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority)
-{
-   thread_t *handle;
-
-   //Create a new task
-   handle = chThdCreateStatic(stack, stackSize * sizeof(uint32_t), priority,
-      (tfunc_t) taskCode, param);
-
-   //Return a handle to the newly created thread
+   //Return the handle referencing the newly created thread
    return (OsTaskId) handle;
 }
 

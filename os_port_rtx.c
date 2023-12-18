@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -39,6 +39,14 @@
 
 //Variables
 static bool_t running = FALSE;
+
+//Default task parameters
+const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+{
+   NULL, //Stack
+   256,  //Size of the stack
+   1     //Task priority
+};
 
 
 /**
@@ -68,50 +76,32 @@ void osStartKernel(OsInitTaskCode task)
 
 /**
  * @brief Create a task
- * @param[in] name A name identifying the task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
    OS_TID taskId;
 
-   //Create a new task
-   taskId = os_tsk_create_ex(taskCode, priority, param);
+   //Static allocation?
+   if(params->stack != NULL)
+   {
+      //Create a new task
+      taskId = os_tsk_create_user_ex(taskCode, params->priority, params->stack,
+         params->stackSize * sizeof(uint32_t), arg);
+   }
+   else
+   {
+      //Create a new task
+      taskId = os_tsk_create_ex(taskCode, params->priority, arg);
+   }
 
-   //Return a handle to the newly created task
-   return (OsTaskId) taskId;
-}
-
-
-/**
- * @brief Create a task with statically allocated memory
- * @param[in] name A name identifying the task
- * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] tcb Pointer to the task control block
- * @param[in] stack Pointer to the stack
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
- * @return Task identifier referencing the newly created task
- **/
-
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority)
-{
-   OS_TID taskId;
-
-   //Create a new task
-   taskId = os_tsk_create_user_ex(taskCode, priority, stack,
-      stackSize * sizeof(uint32_t), param);
-
-   //Return a handle to the newly created task
+   //Return the handle referencing the newly created task
    return (OsTaskId) taskId;
 }
 

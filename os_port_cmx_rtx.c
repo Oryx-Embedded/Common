@@ -1,6 +1,6 @@
 /**
- * @file os_port_ucos3.c
- * @brief RTOS abstraction layer (Micrium uC/OS-III)
+ * @file os_port_cmx_rtx.c
+ * @brief RTOS abstraction layer (CMX-RTX)
  *
  * @section License
  *
@@ -32,20 +32,80 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "os_port.h"
-#include "os_port_ucos3.h"
-#include "os_cfg.h"
+#include "os_port_cmx_rtx.h"
 #include "debug.h"
+
+//Global variable
+static bool_t semaphoreTable[OS_MAX_SEMAPHORES];
 
 //Default task parameters
 const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 {
-   NULL,               //Task control block
-   NULL,               //Stack
-   0,                  //Size of the stack
-   OS_CFG_PRIO_MAX - 1 //Task priority
+   NULL, //Function pointer
+   NULL, //Stack
+   256,  //Size of the stack
+   1     //Task priority
 };
+
+
+/**
+ * @brief Allocate a new semaphore identifier
+ * @return Semaphore identifier
+ **/
+
+uint8_t osAllocateSemaphoreId(void)
+{
+   uint_t i;
+   uint8_t id;
+
+   //Initialize identifier
+   id = OS_INVALID_SEMAPHORE_ID;
+
+   //Enter critical section
+   __disable_irq();
+
+   //Loop through the allocation table
+   for(i = 0; i < OS_MAX_SEMAPHORES && id == OS_INVALID_SEMAPHORE_ID; i++)
+   {
+      //Check whether the current ID is available for use
+      if(semaphoreTable[i] == FALSE)
+      {
+         //Mark the entry as currently used
+         semaphoreTable[i] = TRUE;
+         //Return the current ID
+         id = (uint8_t) i;
+      }
+   }
+
+   //Exit critical section
+   __enable_irq();
+
+   //Return semaphore identifier
+   return id;
+}
+
+
+/**
+ * @brief Release semaphore identifier
+ * @param[in] id Semaphore identifier to be released
+ **/
+
+void osFreeSemaphoreId(uint8_t id)
+{
+   //Check whether the semaphore identifier is valid
+   if(id < OS_MAX_SEMAPHORES)
+   {
+      //Enter critical section
+      __disable_irq();
+
+      //Mark the entry as free
+      semaphoreTable[id] = FALSE;
+
+      //Exit critical section
+      __enable_irq();
+   }
+}
 
 
 /**
@@ -54,10 +114,10 @@ const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 
 void osInitKernel(void)
 {
-   OS_ERR err;
-
-   //Scheduler initialization
-   OSInit(&err);
+   //Clear semaphore ID allocation table
+   osMemset(semaphoreTable, 0, sizeof(semaphoreTable));
+   //Initialize the kernel
+   K_OS_Init();
 }
 
 
@@ -67,10 +127,8 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-   OS_ERR err;
-
    //Start the scheduler
-   OSStart(&err);
+   K_OS_Start();
 }
 
 
@@ -86,40 +144,54 @@ void osStartKernel(void)
 OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    const OsTaskParameters *params)
 {
-   OS_ERR err;
-   CPU_STK stackLimit;
-   OsTaskId taskId;
+   uint8_t status;
+   uint8_t slot;
 
-   //Check parameters
-   if(params->tcb != NULL && params->stack != NULL)
+   //Valid function pointer?
+   if(params->fp != NULL)
    {
-      //The watermark limit is used to monitor and ensure that the stack
-      //does not overflow
-      stackLimit = params->stackSize / 10;
+      taskCode = (OsTaskCode) params->fp;
+   }
 
+   //Static allocation?
+   if(params->stack != NULL)
+   {
       //Create a new task
-      OSTaskCreate(params->tcb, (CPU_CHAR *) name, taskCode, arg,
-         params->priority, params->stack, stackLimit, params->stackSize, 0, 1,
-         NULL, OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
-
-      //Check whether the task was successfully created
-      if(err == OS_ERR_NONE)
-      {
-         taskId = (OsTaskId) params->tcb;
-      }
-      else
-      {
-         taskId = OS_INVALID_TASK_ID;
-      }
+      status = K_Task_Create_Stack(params->priority, &slot, (CMX_FP) taskCode,
+         params->stack + params->stackSize - 1);
    }
    else
    {
-      //Invalid parameters
-      taskId = OS_INVALID_TASK_ID;
+      //Create a new task
+      status = K_Task_Create(params->priority, &slot, (CMX_FP) taskCode,
+         params->stackSize * sizeof(uint32_t));
    }
 
-   //Return the handle referencing the newly created task
-   return taskId;
+#if 0
+   //Check status code
+   if(status == K_OK)
+   {
+      //Assign a name to the task
+      status = K_Task_Name(slot, (char_t *) name);
+   }
+#endif
+
+   //Check status code
+   if(status == K_OK)
+   {
+      //Start the task
+      status = K_Task_Start(slot);
+   }
+
+   //Check status code
+   if(status == K_OK)
+   {
+      return (OsTaskId) slot;
+   }
+   else
+   {
+      return OS_INVALID_TASK_ID;
+   }
 }
 
 
@@ -130,10 +202,15 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
 
 void osDeleteTask(OsTaskId taskId)
 {
-   OS_ERR err;
-
    //Delete the specified task
-   OSTaskDel((OS_TCB *) taskId, &err);
+   if(taskId == OS_SELF_TASK_ID)
+   {
+      K_Task_End();
+   }
+   else
+   {
+      K_Task_Delete(taskId);
+   }
 }
 
 
@@ -144,10 +221,8 @@ void osDeleteTask(OsTaskId taskId)
 
 void osDelayTask(systime_t delay)
 {
-   OS_ERR err;
-
    //Delay the task for the specified duration
-   OSTimeDly(OS_MS_TO_SYSTICKS(delay), OS_OPT_TIME_DLY, &err);
+   K_Task_Wait(OS_MS_TO_SYSTICKS(delay));
 }
 
 
@@ -158,7 +233,7 @@ void osDelayTask(systime_t delay)
 void osSwitchTask(void)
 {
    //Force a context switch
-   OSSched();
+   K_Task_Coop_Sched();
 }
 
 
@@ -168,14 +243,8 @@ void osSwitchTask(void)
 
 void osSuspendAllTasks(void)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Suspend scheduler activity
-      OSSchedLock(&err);
-   }
+   //Suspend all tasks
+   K_Task_Lock();
 }
 
 
@@ -185,14 +254,8 @@ void osSuspendAllTasks(void)
 
 void osResumeAllTasks(void)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Resume scheduler activity
-      OSSchedUnlock(&err);
-   }
+   //Resume all tasks
+   K_Task_Unlock();
 }
 
 
@@ -205,13 +268,25 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
-   OS_ERR err;
+   uint8_t status;
 
-   //Create an event flag group
-   OSFlagCreate(event, "EVENT", 0, &err);
+   //Allocate a new semaphore identifier
+   event->id = osAllocateSemaphoreId();
 
-   //Check whether the event flag group was successfully created
-   if(err == OS_ERR_NONE)
+   //Valid semaphore identifier?
+   if(event->id != OS_INVALID_SEMAPHORE_ID)
+   {
+      //Create a semaphore object
+      status = K_Semaphore_Create(event->id, 0);
+   }
+   else
+   {
+      //Failed to allocate a new identifier
+      status = K_ERROR;
+   }
+
+   //Check whether the semaphore was successfully created
+   if(status == K_OK)
    {
       return TRUE;
    }
@@ -229,14 +304,8 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the event object
-      OSFlagDel(event, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Release semaphore identifier
+   osFreeSemaphoreId(event->id);
 }
 
 
@@ -247,10 +316,8 @@ void osDeleteEvent(OsEvent *event)
 
 void osSetEvent(OsEvent *event)
 {
-   OS_ERR err;
-
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   K_Semaphore_Post(event->id);
 }
 
 
@@ -261,10 +328,16 @@ void osSetEvent(OsEvent *event)
 
 void osResetEvent(OsEvent *event)
 {
-   OS_ERR err;
+   uint8_t status;
 
    //Force the specified event to the nonsignaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_CLR, &err);
+   do
+   {
+      //Decrement the semaphore's count by one
+      status = K_Semaphore_Get(event->id);
+
+      //Check status
+   } while(status == K_OK);
 }
 
 
@@ -278,31 +351,28 @@ void osResetEvent(OsEvent *event)
 
 bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
-   OS_ERR err;
+   uint8_t status;
 
    //Wait until the specified event is in the signaled state or the timeout
    //interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_NON_BLOCKING, NULL, &err);
+      status = K_Semaphore_Get(event->id);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      status = K_Semaphore_Wait(event->id, 0);
    }
    else
    {
-      //Wait until the specified event becomes set
-      OSFlagPend(event, 1, OS_MS_TO_SYSTICKS(timeout), OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      //Wait for the specified time interval
+      status = K_Semaphore_Wait(event->id, OS_MS_TO_SYSTICKS(timeout));
    }
 
    //Check whether the specified event is set
-   if(err == OS_ERR_NONE)
+   if(status == K_OK)
    {
       return TRUE;
    }
@@ -322,10 +392,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
 bool_t osSetEventFromIsr(OsEvent *event)
 {
-   OS_ERR err;
-
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   K_Intrp_Semaphore_Post(event->id);
 
    //The return value is not relevant
    return FALSE;
@@ -343,13 +411,25 @@ bool_t osSetEventFromIsr(OsEvent *event)
 
 bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
-   OS_ERR err;
+   uint8_t status;
 
-   //Create a semaphore
-   OSSemCreate(semaphore, "SEMAPHORE", count, &err);
+   //Allocate a new semaphore identifier
+   semaphore->id = osAllocateSemaphoreId();
+
+   //Valid semaphore identifier?
+   if(semaphore->id != OS_INVALID_SEMAPHORE_ID)
+   {
+      //Create a semaphore object
+      status = K_Semaphore_Create(semaphore->id, count);
+   }
+   else
+   {
+      //Failed to allocate a new identifier
+      status = K_ERROR;
+   }
 
    //Check whether the semaphore was successfully created
-   if(err == OS_ERR_NONE)
+   if(status == K_OK)
    {
       return TRUE;
    }
@@ -367,14 +447,8 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
 void osDeleteSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified semaphore
-      OSSemDel(semaphore, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Release semaphore identifier
+   osFreeSemaphoreId(semaphore->id);
 }
 
 
@@ -388,28 +462,27 @@ void osDeleteSemaphore(OsSemaphore *semaphore)
 
 bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 {
-   OS_ERR err;
+   uint8_t status;
 
    //Wait until the semaphore is available or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      OSSemPend(semaphore, 0, OS_OPT_PEND_NON_BLOCKING, NULL, &err);
+      status = K_Semaphore_Get(semaphore->id);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSSemPend(semaphore, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+      status = K_Semaphore_Wait(semaphore->id, 0);
    }
    else
    {
-      //Wait until the specified semaphore becomes available
-      OSSemPend(semaphore, OS_MS_TO_SYSTICKS(timeout),
-         OS_OPT_PEND_BLOCKING, NULL, &err);
+      //Wait for the specified time interval
+      status = K_Semaphore_Wait(semaphore->id, OS_MS_TO_SYSTICKS(timeout));
    }
 
    //Check whether the specified semaphore is available
-   if(err == OS_ERR_NONE)
+   if(status == K_OK)
    {
       return TRUE;
    }
@@ -427,10 +500,8 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
 void osReleaseSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
    //Release the semaphore
-   OSSemPost(semaphore, OS_OPT_POST_1, &err);
+   K_Semaphore_Post(semaphore->id);
 }
 
 
@@ -443,13 +514,32 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
-   OS_ERR err;
+   uint8_t status;
 
-   //Create a mutex
-   OSMutexCreate(mutex, "MUTEX", &err);
+   //Allocate a new semaphore identifier
+   mutex->id = osAllocateSemaphoreId();
 
-   //Check whether the mutex was successfully created
-   if(err == OS_ERR_NONE)
+   //Valid semaphore identifier?
+   if(mutex->id != OS_INVALID_SEMAPHORE_ID)
+   {
+      //Create a semaphore object
+      status = K_Semaphore_Create(mutex->id, 0);
+   }
+   else
+   {
+      //Failed to allocate a new identifier
+      status = K_ERROR;
+   }
+
+   //Check status code
+   if(status == K_OK)
+   {
+      //Release the semaphore
+      status = K_Semaphore_Post(mutex->id);
+   }
+
+   //Check whether the semaphore was successfully created
+   if(status == K_OK)
    {
       return TRUE;
    }
@@ -467,14 +557,8 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified mutex
-      OSMutexDel(mutex, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Release semaphore identifier
+   osFreeSemaphoreId(mutex->id);
 }
 
 
@@ -485,10 +569,8 @@ void osDeleteMutex(OsMutex *mutex)
 
 void osAcquireMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
    //Obtain ownership of the mutex object
-   OSMutexPend(mutex, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+   K_Semaphore_Wait(mutex->id, 0);
 }
 
 
@@ -499,10 +581,8 @@ void osAcquireMutex(OsMutex *mutex)
 
 void osReleaseMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
    //Release ownership of the mutex object
-   OSMutexPost(mutex, OS_OPT_POST_NONE, &err);
+   K_Semaphore_Post(mutex->id);
 }
 
 
@@ -513,11 +593,10 @@ void osReleaseMutex(OsMutex *mutex)
 
 systime_t osGetSystemTime(void)
 {
-   OS_ERR err;
    systime_t time;
 
    //Get current tick count
-   time = OSTimeGet(&err);
+   time = K_OS_Tick_Get_Ctr();
 
    //Convert system ticks to milliseconds
    return OS_SYSTICKS_TO_MS(time);

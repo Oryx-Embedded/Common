@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +36,15 @@
 #include "os_port.h"
 #include "os_port_embos.h"
 #include "debug.h"
+
+//Default task parameters
+const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+{
+   NULL, //Task control block
+   NULL, //Stack
+   0,    //Size of the stack
+   1     //Task priority
+};
 
 
 /**
@@ -65,27 +74,37 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task with statically allocated memory
- * @param[in] name A name identifying the task
+ * @brief Create a task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] tcb Pointer to the task control block
- * @param[in] stack Pointer to the stack
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
-   //Create a new task
-   OS_CreateTaskEx(tcb, name, priority, taskCode, stack,
-      stackSize * sizeof(uint32_t), 1, param);
+   OsTaskId taskId;
 
-   //Return a handle to the newly created task
-   return tcb;
+   //Check parameters
+   if(params->tcb != NULL && params->stack != NULL)
+   {
+      //Create a new task
+      OS_CreateTaskEx(params->tcb, name, params->priority, taskCode,
+         params->stack, params->stackSize * sizeof(uint32_t), 1, arg);
+
+      //The task was successfully created
+      taskId = (OsTaskId) params->tcb;
+   }
+   else
+   {
+      //Invalid parameters
+      taskId = OS_INVALID_TASK_ID;
+   }
+
+   //Return the handle referencing the newly created task
+   return taskId;
 }
 
 

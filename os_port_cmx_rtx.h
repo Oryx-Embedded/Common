@@ -1,6 +1,6 @@
 /**
- * @file os_port_none.h
- * @brief RTOS-less environment
+ * @file os_port_cmx_rtx.h
+ * @brief RTOS abstraction layer (CMX-RTX)
  *
  * @section License
  *
@@ -26,9 +26,21 @@
  * @version 2.3.4
  **/
 
-#ifndef _OS_PORT_NONE_H
-#define _OS_PORT_NONE_H
+#ifndef _OS_PORT_CMX_RTX_H
+#define _OS_PORT_CMX_RTX_H
 
+//Dependencies
+#include "cxfuncs.h"
+
+//Maximum number of semaphores that can be created
+#ifndef OS_MAX_SEMAPHORES
+   #define OS_MAX_SEMAPHORES 64
+#elif (OS_MAX_SEMAPHORES < 1 || OS_MAX_SEMAPHORES > 255)
+   #error OS_MAX_SEMAPHORES parameter is not valid
+#endif
+
+//Invalid semaphore identifier
+#define OS_INVALID_SEMAPHORE_ID 255
 //Invalid task identifier
 #define OS_INVALID_TASK_ID 0
 //Self task identifier
@@ -36,12 +48,12 @@
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
-   #define OS_TASK_PRIORITY_NORMAL 0
+   #define OS_TASK_PRIORITY_NORMAL 3
 #endif
 
 //Task priority (high)
 #ifndef OS_TASK_PRIORITY_HIGH
-   #define OS_TASK_PRIORITY_HIGH 0
+   #define OS_TASK_PRIORITY_HIGH 2
 #endif
 
 //Milliseconds to system ticks
@@ -63,16 +75,10 @@
 #define osEnterTask()
 //Task epilogue
 #define osExitTask()
-
 //Interrupt service routine prologue
-#ifndef osEnterIsr
-   #define osEnterIsr()
-#endif
-
+#define osEnterIsr()
 //Interrupt service routine epilogue
-#ifndef osExitIsr
-   #define osExitIsr(flag) (void) flag
-#endif
+#define osExitIsr(flag)
 
 //C++ guard
 #ifdef __cplusplus
@@ -91,7 +97,7 @@ typedef uint32_t systime_t;
  * @brief Task identifier
  **/
 
-typedef uint_t OsTaskId;
+typedef uint8_t OsTaskId;
 
 
 /**
@@ -100,6 +106,8 @@ typedef uint_t OsTaskId;
 
 typedef struct
 {
+   CMX_FP fp;
+   word32 *stack;
    size_t stackSize;
    uint_t priority;
 } OsTaskParameters;
@@ -109,21 +117,30 @@ typedef struct
  * @brief Event object
  **/
 
-typedef uint_t OsEvent;
+typedef struct
+{
+   uint8_t id;
+} OsEvent;
 
 
 /**
  * @brief Semaphore object
  **/
 
-typedef uint_t OsSemaphore;
+typedef struct
+{
+   uint8_t id;
+} OsSemaphore;
 
 
 /**
  * @brief Mutex object
  **/
 
-typedef uint_t OsMutex;
+typedef struct
+{
+   uint8_t id;
+} OsMutex;
 
 
 /**
@@ -132,8 +149,6 @@ typedef uint_t OsMutex;
 
 typedef void (*OsTaskCode)(void *arg);
 
-//Tick count
-extern volatile systime_t systemTicks;
 
 //Default task parameters
 extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;

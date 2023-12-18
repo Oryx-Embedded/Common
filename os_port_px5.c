@@ -1,6 +1,6 @@
 /**
- * @file os_port_ucos3.c
- * @brief RTOS abstraction layer (Micrium uC/OS-III)
+ * @file os_port_px5.c
+ * @brief RTOS abstraction layer (PX5)
  *
  * @section License
  *
@@ -32,20 +32,24 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "os_port.h"
-#include "os_port_ucos3.h"
-#include "os_cfg.h"
+#include "os_port_px5.h"
 #include "debug.h"
+
+//Pthread start routine
+typedef void *(*PthreadTaskCode) (void *param);
 
 //Default task parameters
 const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 {
-   NULL,               //Task control block
-   NULL,               //Stack
-   0,                  //Size of the stack
-   OS_CFG_PRIO_MAX - 1 //Task priority
+   NULL, //Stack
+   0,    //Size of the stack
+   0     //Task priority
 };
+
+//Forward declaration of functions
+void *osAllocMemCallback(u_int type, u_long size);
+void osFreeMemCallback(u_int type, void *p);
 
 
 /**
@@ -54,10 +58,11 @@ const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 
 void osInitKernel(void)
 {
-   OS_ERR err;
+   //Start RTOS
+   px5_pthread_start(1, NULL, 0);
 
-   //Scheduler initialization
-   OSInit(&err);
+   //Setup the memory manager allocate and release memory routines
+   px5_pthread_memory_manager_set(osAllocMemCallback, osFreeMemCallback);
 }
 
 
@@ -67,10 +72,7 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-   OS_ERR err;
-
-   //Start the scheduler
-   OSStart(&err);
+   //Not implemented
 }
 
 
@@ -86,40 +88,52 @@ void osStartKernel(void)
 OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    const OsTaskParameters *params)
 {
-   OS_ERR err;
-   CPU_STK stackLimit;
-   OsTaskId taskId;
+   int_t ret;
+   px5_pthread_t thread;
+   px5_pthread_attr_t threadAttr;
 
-   //Check parameters
-   if(params->tcb != NULL && params->stack != NULL)
+   //Set thread attributes
+   ret = pthread_attr_init(&threadAttr);
+
+   //Check status code
+   if(ret == PX5_SUCCESS)
    {
-      //The watermark limit is used to monitor and ensure that the stack
-      //does not overflow
-      stackLimit = params->stackSize / 10;
-
-      //Create a new task
-      OSTaskCreate(params->tcb, (CPU_CHAR *) name, taskCode, arg,
-         params->priority, params->stack, stackLimit, params->stackSize, 0, 1,
-         NULL, OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
-
-      //Check whether the task was successfully created
-      if(err == OS_ERR_NONE)
+      //Static allocation?
+      if(params->stack != NULL)
       {
-         taskId = (OsTaskId) params->tcb;
+         //Specify the stack address
+         ret = px5_pthread_attr_setstackaddr(&threadAttr, params->stack);
       }
-      else
-      {
-         taskId = OS_INVALID_TASK_ID;
-      }
+   }
+
+   //Check status code
+   if(ret == PX5_SUCCESS)
+   {
+      //Specify the size of the stack
+      ret = px5_pthread_attr_setstacksize(&threadAttr,
+         params->stackSize * sizeof(uint32_t));
+   }
+
+   //Check status code
+   if(ret == PX5_SUCCESS)
+   {
+      //Specify the priority of the task
+      ret = px5_pthread_attr_setpriority(&threadAttr, params->priority);
+   }
+
+   //Create a new thread
+   ret = px5_pthread_create(&thread, &threadAttr, (PthreadTaskCode) taskCode,
+      arg);
+
+   //Return a pointer to the newly created thread
+   if(ret == PX5_SUCCESS)
+   {
+      return (OsTaskId) thread;
    }
    else
    {
-      //Invalid parameters
-      taskId = OS_INVALID_TASK_ID;
+      return OS_INVALID_TASK_ID;
    }
-
-   //Return the handle referencing the newly created task
-   return taskId;
 }
 
 
@@ -130,10 +144,17 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
 
 void osDeleteTask(OsTaskId taskId)
 {
-   OS_ERR err;
-
-   //Delete the specified task
-   OSTaskDel((OS_TCB *) taskId, &err);
+   //Delete the calling thread?
+   if(taskId == OS_SELF_TASK_ID)
+   {
+      //Kill ourselves
+      px5_pthread_exit(NULL);
+   }
+   else
+   {
+      //Delete the specified thread
+      pthread_cancel(taskId);
+   }
 }
 
 
@@ -144,10 +165,8 @@ void osDeleteTask(OsTaskId taskId)
 
 void osDelayTask(systime_t delay)
 {
-   OS_ERR err;
-
    //Delay the task for the specified duration
-   OSTimeDly(OS_MS_TO_SYSTICKS(delay), OS_OPT_TIME_DLY, &err);
+   px5_pthread_tick_sleep(OS_MS_TO_SYSTICKS(delay));
 }
 
 
@@ -158,7 +177,7 @@ void osDelayTask(systime_t delay)
 void osSwitchTask(void)
 {
    //Force a context switch
-   OSSched();
+   px5_sched_yield();
 }
 
 
@@ -168,14 +187,7 @@ void osSwitchTask(void)
 
 void osSuspendAllTasks(void)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Suspend scheduler activity
-      OSSchedLock(&err);
-   }
+   //Not implemented
 }
 
 
@@ -185,14 +197,7 @@ void osSuspendAllTasks(void)
 
 void osResumeAllTasks(void)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Resume scheduler activity
-      OSSchedUnlock(&err);
-   }
+   //Not implemented
 }
 
 
@@ -205,13 +210,13 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
-   OS_ERR err;
+   int_t ret;
 
-   //Create an event flag group
-   OSFlagCreate(event, "EVENT", 0, &err);
+   //Create a semaphore object
+   ret = px5_sem_init(event, 0, 0);
 
-   //Check whether the event flag group was successfully created
-   if(err == OS_ERR_NONE)
+   //Check whether the semaphore was successfully created
+   if(ret == PX5_SUCCESS)
    {
       return TRUE;
    }
@@ -229,14 +234,8 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the event object
-      OSFlagDel(event, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Properly dispose the event object
+   px5_sem_destroy(event);
 }
 
 
@@ -247,10 +246,8 @@ void osDeleteEvent(OsEvent *event)
 
 void osSetEvent(OsEvent *event)
 {
-   OS_ERR err;
-
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   px5_sem_post(event);
 }
 
 
@@ -261,10 +258,16 @@ void osSetEvent(OsEvent *event)
 
 void osResetEvent(OsEvent *event)
 {
-   OS_ERR err;
+   int_t ret;
 
    //Force the specified event to the nonsignaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_CLR, &err);
+   do
+   {
+      //Decrement the semaphore's count by one
+      ret = px5_sem_trywait(event);
+
+      //Check status
+   } while(ret == PX5_SUCCESS);
 }
 
 
@@ -278,36 +281,44 @@ void osResetEvent(OsEvent *event)
 
 bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
-   OS_ERR err;
+   int_t ret;
 
    //Wait until the specified event is in the signaled state or the timeout
    //interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_NON_BLOCKING, NULL, &err);
+      ret = px5_sem_trywait(event);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      ret = px5_sem_wait(event);
    }
    else
    {
       //Wait until the specified event becomes set
-      OSFlagPend(event, 1, OS_MS_TO_SYSTICKS(timeout), OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      ret = px5_sem_timedwait(event, OS_MS_TO_SYSTICKS(timeout));
    }
 
    //Check whether the specified event is set
-   if(err == OS_ERR_NONE)
+   if(ret == PX5_SUCCESS)
    {
+      //Force the event back to the nonsignaled state
+      do
+      {
+         //Decrement the semaphore's count by one
+         ret = px5_sem_trywait(event);
+
+         //Check status
+      } while(ret == PX5_SUCCESS);
+
+      //The specified event is in the signaled state
       return TRUE;
    }
    else
    {
+      //The timeout interval elapsed
       return FALSE;
    }
 }
@@ -322,10 +333,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
 bool_t osSetEventFromIsr(OsEvent *event)
 {
-   OS_ERR err;
-
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   px5_sem_post(event);
 
    //The return value is not relevant
    return FALSE;
@@ -343,13 +352,13 @@ bool_t osSetEventFromIsr(OsEvent *event)
 
 bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
-   OS_ERR err;
+   int_t ret;
 
-   //Create a semaphore
-   OSSemCreate(semaphore, "SEMAPHORE", count, &err);
+   //Create a semaphore object
+   ret = px5_sem_init(semaphore, 0, count);
 
    //Check whether the semaphore was successfully created
-   if(err == OS_ERR_NONE)
+   if(ret == PX5_SUCCESS)
    {
       return TRUE;
    }
@@ -367,14 +376,8 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
 void osDeleteSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified semaphore
-      OSSemDel(semaphore, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Properly dispose the semaphore object
+   px5_sem_destroy(semaphore);
 }
 
 
@@ -388,28 +391,27 @@ void osDeleteSemaphore(OsSemaphore *semaphore)
 
 bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 {
-   OS_ERR err;
+   int_t ret;
 
    //Wait until the semaphore is available or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      OSSemPend(semaphore, 0, OS_OPT_PEND_NON_BLOCKING, NULL, &err);
+      ret = px5_sem_trywait(semaphore);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSSemPend(semaphore, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+      ret = px5_sem_wait(semaphore);
    }
    else
    {
       //Wait until the specified semaphore becomes available
-      OSSemPend(semaphore, OS_MS_TO_SYSTICKS(timeout),
-         OS_OPT_PEND_BLOCKING, NULL, &err);
+      ret = px5_sem_timedwait(semaphore, OS_MS_TO_SYSTICKS(timeout));
    }
 
    //Check whether the specified semaphore is available
-   if(err == OS_ERR_NONE)
+   if(ret == PX5_SUCCESS)
    {
       return TRUE;
    }
@@ -427,10 +429,8 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
 void osReleaseSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
    //Release the semaphore
-   OSSemPost(semaphore, OS_OPT_POST_1, &err);
+   px5_sem_post(semaphore);
 }
 
 
@@ -443,13 +443,13 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
-   OS_ERR err;
+   int_t ret;
 
-   //Create a mutex
-   OSMutexCreate(mutex, "MUTEX", &err);
+   //Create a mutex object
+   ret = px5_pthread_mutex_init(mutex, NULL);
 
    //Check whether the mutex was successfully created
-   if(err == OS_ERR_NONE)
+   if(ret == PX5_SUCCESS)
    {
       return TRUE;
    }
@@ -467,14 +467,8 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified mutex
-      OSMutexDel(mutex, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Properly dispose the mutex object
+   px5_pthread_mutex_destroy(mutex);
 }
 
 
@@ -485,10 +479,8 @@ void osDeleteMutex(OsMutex *mutex)
 
 void osAcquireMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
    //Obtain ownership of the mutex object
-   OSMutexPend(mutex, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+   px5_pthread_mutex_lock(mutex);
 }
 
 
@@ -499,10 +491,8 @@ void osAcquireMutex(OsMutex *mutex)
 
 void osReleaseMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
    //Release ownership of the mutex object
-   OSMutexPost(mutex, OS_OPT_POST_NONE, &err);
+   px5_pthread_mutex_unlock(mutex);
 }
 
 
@@ -513,11 +503,10 @@ void osReleaseMutex(OsMutex *mutex)
 
 systime_t osGetSystemTime(void)
 {
-   OS_ERR err;
    systime_t time;
 
    //Get current tick count
-   time = OSTimeGet(&err);
+   time = px5_pthread_ticks_get();
 
    //Convert system ticks to milliseconds
    return OS_SYSTICKS_TO_MS(time);
@@ -572,3 +561,32 @@ __weak_func void osFreeMem(void *p)
       osResumeAllTasks();
    }
 }
+
+
+/**
+ * @brief Memory manager allocate function
+ * @param[in] type Unused parameter
+ * @param[in] size Bytes to allocate
+ * @return A pointer to the allocated memory block or NULL if
+ *   there is insufficient memory available
+ **/
+
+void *osAllocMemCallback(u_int type, u_long size)
+{
+   //Allocate a memory block
+   return osAllocMem(size);
+}
+
+
+/**
+ * @brief Memory manager release function
+ * @param[in] type Unused parameter
+ * @param[in] p Previously allocated memory block to be freed
+ **/
+
+void osFreeMemCallback(u_int type, void *p)
+{
+   //Free memory block
+   osFreeMem(p);
+}
+

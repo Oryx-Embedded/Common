@@ -1,6 +1,6 @@
 /**
- * @file os_port_none.h
- * @brief RTOS-less environment
+ * @file os_port_zephyr.h
+ * @brief RTOS abstraction layer (Zephyr)
  *
  * @section License
  *
@@ -26,22 +26,25 @@
  * @version 2.3.4
  **/
 
-#ifndef _OS_PORT_NONE_H
-#define _OS_PORT_NONE_H
+#ifndef _OS_PORT_ZEPHYR_H
+#define _OS_PORT_ZEPHYR_H
+
+//Dependencies
+#include <zephyr/kernel.h>
 
 //Invalid task identifier
-#define OS_INVALID_TASK_ID 0
+#define OS_INVALID_TASK_ID NULL
 //Self task identifier
-#define OS_SELF_TASK_ID 0
+#define OS_SELF_TASK_ID NULL
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
-   #define OS_TASK_PRIORITY_NORMAL 0
+   #define OS_TASK_PRIORITY_NORMAL (CONFIG_NUM_PREEMPT_PRIORITIES - 1)
 #endif
 
 //Task priority (high)
 #ifndef OS_TASK_PRIORITY_HIGH
-   #define OS_TASK_PRIORITY_HIGH 0
+   #define OS_TASK_PRIORITY_HIGH (CONFIG_NUM_PREEMPT_PRIORITIES - 2)
 #endif
 
 //Milliseconds to system ticks
@@ -52,11 +55,6 @@
 //System ticks to milliseconds
 #ifndef OS_SYSTICKS_TO_MS
    #define OS_SYSTICKS_TO_MS(n) (n)
-#endif
-
-//Retrieve 64-bit system time (not implemented)
-#ifndef osGetSystemTime64
-   #define osGetSystemTime64() osGetSystemTime()
 #endif
 
 //Task prologue
@@ -91,7 +89,7 @@ typedef uint32_t systime_t;
  * @brief Task identifier
  **/
 
-typedef uint_t OsTaskId;
+typedef k_tid_t OsTaskId;
 
 
 /**
@@ -100,6 +98,8 @@ typedef uint_t OsTaskId;
 
 typedef struct
 {
+   struct k_thread *tcb;
+   k_thread_stack_t *stack;
    size_t stackSize;
    uint_t priority;
 } OsTaskParameters;
@@ -109,21 +109,21 @@ typedef struct
  * @brief Event object
  **/
 
-typedef uint_t OsEvent;
+typedef struct k_sem OsEvent;
 
 
 /**
  * @brief Semaphore object
  **/
 
-typedef uint_t OsSemaphore;
+typedef struct k_sem OsSemaphore;
 
 
 /**
  * @brief Mutex object
  **/
 
-typedef uint_t OsMutex;
+typedef struct k_mutex OsMutex;
 
 
 /**
@@ -132,8 +132,6 @@ typedef uint_t OsMutex;
 
 typedef void (*OsTaskCode)(void *arg);
 
-//Tick count
-extern volatile systime_t systemTicks;
 
 //Default task parameters
 extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;
@@ -174,6 +172,7 @@ void osReleaseMutex(OsMutex *mutex);
 
 //System time
 systime_t osGetSystemTime(void);
+uint64_t osGetSystemTime64(void);
 
 //Memory management
 void *osAllocMem(size_t size);

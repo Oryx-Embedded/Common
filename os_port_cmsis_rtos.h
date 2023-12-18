@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _OS_PORT_CMSIS_RTOS_H
@@ -31,9 +31,6 @@
 
 //Dependencies
 #include "cmsis_os.h"
-
-//Use dynamic memory allocation for tasks
-#define OS_STATIC_TASK_SUPPORT DISABLED
 
 //Invalid task identifier
 #define OS_INVALID_TASK_ID NULL
@@ -95,6 +92,17 @@ typedef osThreadId OsTaskId;
 
 
 /**
+ * @brief Task parameters
+ **/
+
+typedef struct
+{
+   size_t stackSize;
+   uint_t priority;
+} OsTaskParameters;
+
+
+/**
  * @brief Event object
  **/
 
@@ -137,16 +145,19 @@ typedef struct
  * @brief Task routine
  **/
 
-typedef void (*OsTaskCode)(void *param);
+typedef void (*OsTaskCode)(void *arg);
 
+
+//Default task parameters
+extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;
 
 //Kernel management
 void osInitKernel(void);
 void osStartKernel(void);
 
 //Task management
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority);
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params);
 
 void osDeleteTask(OsTaskId taskId);
 void osDelayTask(systime_t delay);

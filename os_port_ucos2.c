@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +36,14 @@
 #include "os_port.h"
 #include "os_port_ucos2.h"
 #include "debug.h"
+
+//Default task parameters
+const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+{
+   NULL, //Stack
+   0,    //Size of the stack
+   0     //Task priority
+};
 
 
 /**
@@ -61,55 +69,50 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task with statically allocated memory
- * @param[in] name A name identifying the task
+ * @brief Create a task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] tcb Pointer to the task control block
- * @param[in] stack Pointer to the stack
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
    INT8U err;
    OS_STK *stackTop;
+   OsTaskId taskId;
 
-   //Top of the stack
-   stackTop = (OS_STK *) stack + (stackSize - 1);
-
-   //Search for a free TCB
-   while(priority < (OS_LOWEST_PRIO - 3) && OSTCBPrioTbl[priority] != 0)
+   //Check parameters
+   if(params->stack != NULL)
    {
-      priority++;
-   }
+      //Top of the stack
+      stackTop = (OS_STK *) params->stack + (params->stackSize - 1);
 
-   //Any TCB available?
-   if(priority < (OS_LOWEST_PRIO - 3))
-   {
       //Create a new task
-      err = OSTaskCreateExt(taskCode, param, stackTop, priority, priority,
-         stack, stackSize, NULL, OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+      err = OSTaskCreateExt(taskCode, arg, stackTop, params->priority,
+         params->priority, params->stack, params->stackSize, NULL,
+         OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+
+      //Check whether the task was successfully created
+      if(err == OS_ERR_NONE)
+      {
+         taskId = (OsTaskId) params->priority;
+      }
+      else
+      {
+         taskId = OS_INVALID_TASK_ID;
+      }
    }
    else
    {
-      //No more TCB available
-      err = OS_ERR_PRIO_INVALID;
+      //Invalid parameters
+      taskId = OS_INVALID_TASK_ID;
    }
 
-   //Check whether the task was successfully created
-   if(err == OS_ERR_NONE)
-   {
-      return (OsTaskId) priority;
-   }
-   else
-   {
-      return OS_INVALID_TASK_ID;
-   }
+   //Return the handle referencing the newly created task
+   return taskId;
 }
 
 

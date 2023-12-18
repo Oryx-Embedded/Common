@@ -1,6 +1,6 @@
 /**
- * @file os_port_none.h
- * @brief RTOS-less environment
+ * @file os_port_safertos.h
+ * @brief RTOS abstraction layer (SafeRTOS)
  *
  * @section License
  *
@@ -26,22 +26,25 @@
  * @version 2.3.4
  **/
 
-#ifndef _OS_PORT_NONE_H
-#define _OS_PORT_NONE_H
+#ifndef _OS_PORT_SAFERTOS_H
+#define _OS_PORT_SAFERTOS_H
+
+//Dependencies
+#include "SafeRTOS_API.h"
 
 //Invalid task identifier
-#define OS_INVALID_TASK_ID 0
+#define OS_INVALID_TASK_ID NULL
 //Self task identifier
-#define OS_SELF_TASK_ID 0
+#define OS_SELF_TASK_ID NULL
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
-   #define OS_TASK_PRIORITY_NORMAL 0
+   #define OS_TASK_PRIORITY_NORMAL (taskIDLE_PRIORITY + 1)
 #endif
 
 //Task priority (high)
 #ifndef OS_TASK_PRIORITY_HIGH
-   #define OS_TASK_PRIORITY_HIGH 0
+   #define OS_TASK_PRIORITY_HIGH (taskIDLE_PRIORITY + 2)
 #endif
 
 //Milliseconds to system ticks
@@ -60,18 +63,33 @@
 #endif
 
 //Task prologue
-#define osEnterTask()
-//Task epilogue
-#define osExitTask()
+#ifndef osEnterTask
+   #define osEnterTask()
+#endif
 
 //Interrupt service routine prologue
-#ifndef osEnterIsr
+#if defined(portENTER_SWITCHING_ISR)
+   #define osEnterIsr() portENTER_SWITCHING_ISR()
+#else
    #define osEnterIsr()
 #endif
 
 //Interrupt service routine epilogue
-#ifndef osExitIsr
-   #define osExitIsr(flag) (void) flag
+#if defined(__XTENSA__)
+   #define osExitIsr(flag) if(flag) portYIELD_FROM_ISR()
+#elif defined(portEXIT_SWITCHING_ISR)
+   #define osExitIsr(flag) portEXIT_SWITCHING_ISR()
+#elif defined(portEND_SWITCHING_ISR)
+   #define osExitIsr(flag) portEND_SWITCHING_ISR(flag)
+#elif defined(portYIELD_FROM_ISR)
+   #define osExitIsr(flag) portYIELD_FROM_ISR(flag)
+#else
+   #define osExitIsr(flag)
+#endif
+
+//Static object allocation
+#ifndef configSUPPORT_STATIC_ALLOCATION
+   #define configSUPPORT_STATIC_ALLOCATION 0
 #endif
 
 //C++ guard
@@ -91,7 +109,7 @@ typedef uint32_t systime_t;
  * @brief Task identifier
  **/
 
-typedef uint_t OsTaskId;
+typedef portTaskHandleType OsTaskId;
 
 
 /**
@@ -100,8 +118,13 @@ typedef uint_t OsTaskId;
 
 typedef struct
 {
-   size_t stackSize;
-   uint_t priority;
+   xTCB *tcb;
+   portInt8Type *stack;
+   portUInt32Type stackSize;
+   portUnsignedBaseType priority;
+#ifdef OS_TASK_PRIVATE_PARAMS
+   OS_TASK_PRIVATE_PARAMS
+#endif
 } OsTaskParameters;
 
 
@@ -109,21 +132,33 @@ typedef struct
  * @brief Event object
  **/
 
-typedef uint_t OsEvent;
+typedef struct
+{
+   xSemaphoreHandle handle;
+   portInt8Type buffer[portQUEUE_OVERHEAD_BYTES * 2];
+} OsEvent;
 
 
 /**
  * @brief Semaphore object
  **/
 
-typedef uint_t OsSemaphore;
+typedef struct
+{
+   xSemaphoreHandle handle;
+   portInt8Type buffer[portQUEUE_OVERHEAD_BYTES * 2];
+} OsSemaphore;
 
 
 /**
  * @brief Mutex object
  **/
 
-typedef uint_t OsMutex;
+typedef struct
+{
+   xSemaphoreHandle handle;
+   portInt8Type buffer[portQUEUE_OVERHEAD_BYTES * 2];
+} OsMutex;
 
 
 /**
@@ -132,8 +167,6 @@ typedef uint_t OsMutex;
 
 typedef void (*OsTaskCode)(void *arg);
 
-//Tick count
-extern volatile systime_t systemTicks;
 
 //Default task parameters
 extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;

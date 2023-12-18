@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,13 @@
 #include "os_port.h"
 #include "os_port_cmsis_rtos.h"
 #include "debug.h"
+
+//Default task parameters
+const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+{
+   256,             //Size of the stack
+   osPriorityNormal //Task priority
+};
 
 
 /**
@@ -68,23 +75,26 @@ void osStartKernel(void)
 
 /**
  * @brief Create a task
- * @param[in] name A name identifying the task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
    osThreadId threadId;
    osThreadDef_t threadDef;
 
+   //Initialize thread parameters
+   memset(&threadDef, 0, sizeof(threadDef));
+
+   //Set thread parameters
 #if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    threadDef.pthread = (os_pthread) taskCode;
-   threadDef.tpriority = (osPriority) priority;
+   threadDef.tpriority = (osPriority) params->priority;
    threadDef.instances = 1;
    threadDef.stacksize = stackSize * sizeof(uint32_t);
 #elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
@@ -94,8 +104,8 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
    threadDef.attr.cb_mem = NULL;
    threadDef.attr.cb_size = 0;
    threadDef.attr.stack_mem = NULL;
-   threadDef.attr.stack_size = stackSize * sizeof(uint32_t);
-   threadDef.attr.priority = (osPriority_t) priority;
+   threadDef.attr.stack_size = params->stackSize * sizeof(uint32_t);
+   threadDef.attr.priority = (osPriority_t) params->priority;
    threadDef.attr.tz_module = 0;
    threadDef.attr.reserved = 0;
 #elif defined(osCMSIS_FreeRTOS)
@@ -105,22 +115,22 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
    threadDef.attr.cb_mem = NULL;
    threadDef.attr.cb_size = 0;
    threadDef.attr.stack_mem = NULL;
-   threadDef.attr.stack_size = stackSize * sizeof(uint32_t);
-   threadDef.attr.priority = (osPriority_t) priority;
+   threadDef.attr.stack_size = params->stackSize * sizeof(uint32_t);
+   threadDef.attr.priority = (osPriority_t) params->priority;
    threadDef.attr.tz_module = 0;
    threadDef.attr.reserved = 0;
 #else
    threadDef.name = (char_t *) name;
    threadDef.pthread = (os_pthread) taskCode;
-   threadDef.tpriority = (osPriority) priority;
+   threadDef.tpriority = (osPriority) params->priority;
    threadDef.instances = 1;
-   threadDef.stacksize = stackSize;
+   threadDef.stacksize = params->stackSize;
 #endif
 
    //Create a new thread
-   threadId = osThreadCreate(&threadDef, param);
+   threadId = osThreadCreate(&threadDef, arg);
 
-   //Return a handle to the newly created thread
+   //Return the handle referencing the newly created thread
    return (OsTaskId) threadId;
 }
 

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,15 @@
 #include "os_port.h"
 #include "os_port_cmsis_rtos2.h"
 #include "debug.h"
+
+//Default task parameters
+const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+{
+   NULL,            //Task control block
+   NULL,            //Stack
+   256,             //Size of the stack
+   osPriorityNormal //Task priority
+};
 
 
 /**
@@ -61,90 +70,53 @@ void osStartKernel(void)
 
 /**
  * @brief Create a task
- * @param[in] name A name identifying the task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
    osThreadId_t threadId;
    osThreadAttr_t threadAttr;
 
+   //Initialize thread attributes
+   memset(&threadAttr, 0, sizeof(threadAttr));
+
    //Set thread attributes
    threadAttr.name = name;
    threadAttr.attr_bits = 0;
-   threadAttr.cb_mem = NULL;
-   threadAttr.cb_size = 0;
-   threadAttr.stack_mem = NULL;
-   threadAttr.stack_size = stackSize * sizeof(uint32_t);
-   threadAttr.priority = (osPriority_t) priority;
+   threadAttr.stack_mem = params->stack;
+   threadAttr.stack_size = params->stackSize * sizeof(uint32_t);
+   threadAttr.priority = (osPriority_t) params->priority;
    threadAttr.tz_module = 0;
    threadAttr.reserved = 0;
 
-   //Create a new thread
-   threadId = osThreadNew(taskCode, param, &threadAttr);
-
-   //Return a handle to the newly created thread
-   return (OsTaskId) threadId;
-}
-
-
-/**
- * @brief Create a task with statically allocated memory
- * @param[in] name A name identifying the task
- * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] tcb Pointer to the task control block
- * @param[in] stack Pointer to the stack
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
- * @return Task identifier referencing the newly created task
- **/
-
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority)
-{
-   osThreadId_t threadId;
-   osThreadAttr_t threadAttr;
-
-   //Set thread attributes
-   threadAttr.name = name;
-   threadAttr.attr_bits = 0;
+   //Static allocation?
+   if(params->cb != NULL)
+   {
 #if defined(os_CMSIS_RTX)
-   threadAttr.cb_mem = &tcb->cb;
-   threadAttr.cb_size = sizeof(os_thread_t);
-   threadAttr.stack_mem = stack;
-   threadAttr.stack_size = stackSize * sizeof(uint32_t);
+      threadAttr.cb_mem = params->cb;
+      threadAttr.cb_size = sizeof(os_thread_t);
 #elif defined(osRtxVersionKernel)
-   threadAttr.cb_mem = &tcb->cb;
-   threadAttr.cb_size = sizeof(osRtxThread_t);
-   threadAttr.stack_mem = stack;
-   threadAttr.stack_size = stackSize * sizeof(uint32_t);
+      threadAttr.cb_mem = params->cb;
+      threadAttr.cb_size = sizeof(osRtxThread_t);
 #elif defined(configSUPPORT_STATIC_ALLOCATION)
-   threadAttr.cb_mem = &tcb->cb;
-   threadAttr.cb_size = sizeof(StaticTask_t);
-   threadAttr.stack_mem = stack;
-   threadAttr.stack_size = stackSize * sizeof(uint32_t);
+      threadAttr.cb_mem = params->cb;
+      threadAttr.cb_size = sizeof(StaticTask_t);
 #else
-   threadAttr.cb_mem = NULL;
-   threadAttr.cb_size = 0;
-   threadAttr.stack_mem = NULL;
-   threadAttr.stack_size = 0;
+      threadAttr.cb_mem = NULL;
+      threadAttr.cb_size = 0;
 #endif
-   threadAttr.priority = (osPriority_t) priority;
-   threadAttr.tz_module = 0;
-   threadAttr.reserved = 0;
+   }
 
    //Create a new thread
-   threadId = osThreadNew(taskCode, param, &threadAttr);
+   threadId = osThreadNew(taskCode, arg, &threadAttr);
 
-   //Return a handle to the newly created thread
+   //Return the handle referencing the newly created thread
    return (OsTaskId) threadId;
 }
 

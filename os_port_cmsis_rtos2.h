@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _OS_PORT_CMSIS_RTOS2_H
@@ -38,14 +38,6 @@
 
 #ifdef RTE_CMSIS_RTOS2_FreeRTOS
    #include "freertos.h"
-#endif
-
-
-//Use static or dynamic memory allocation for tasks
-#ifndef OS_STATIC_TASK_SUPPORT
-   #define OS_STATIC_TASK_SUPPORT DISABLED
-#elif (OS_STATIC_TASK_SUPPORT != ENABLED && OS_STATIC_TASK_SUPPORT != DISABLED)
-   #error OS_STATIC_TASK_SUPPORT parameter is not valid
 #endif
 
 //Invalid task identifier
@@ -108,29 +100,24 @@ typedef osThreadId_t OsTaskId;
 
 
 /**
- * @brief Task control block
+ * @brief Task parameters
  **/
 
 typedef struct
 {
 #if defined(os_CMSIS_RTX)
-   os_thread_t cb;
+   os_thread_t *cb;
 #endif
 #if defined(osRtxVersionKernel)
-   osRtxThread_t cb;
+   osRtxThread_t *cb;
 #endif
 #if defined(configSUPPORT_STATIC_ALLOCATION)
-   StaticTask_t cb;
+   StaticTask_t *cb;
 #endif
-   uint64_t dummy;
-} OsTaskTcb;
-
-
-/**
- * @brief Stack data type
- **/
-
-typedef uint32_t OsStackType;
+   uint32_t *stack;
+   size_t stackSize;
+   uint_t priority;
+} OsTaskParameters;
 
 
 /**
@@ -185,20 +172,19 @@ typedef struct
  * @brief Task routine
  **/
 
-typedef void (*OsTaskCode)(void *param);
+typedef void (*OsTaskCode)(void *arg);
 
+
+//Default task parameters
+extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;
 
 //Kernel management
 void osInitKernel(void);
 void osStartKernel(void);
 
 //Task management
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority);
-
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority);
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params);
 
 void osDeleteTask(OsTaskId taskId);
 void osDelayTask(systime_t delay);

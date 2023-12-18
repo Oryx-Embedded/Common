@@ -1,6 +1,6 @@
 /**
- * @file os_port_ucos3.c
- * @brief RTOS abstraction layer (Micrium uC/OS-III)
+ * @file os_port_safertos.c
+ * @brief RTOS abstraction layer (SafeRTOS)
  *
  * @section License
  *
@@ -30,22 +30,24 @@
 #define TRACE_LEVEL TRACE_LEVEL_OFF
 
 //Dependencies
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "os_port.h"
-#include "os_port_ucos3.h"
-#include "os_cfg.h"
+#include "os_port_safertos.h"
 #include "debug.h"
 
 //Default task parameters
 const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 {
-   NULL,               //Task control block
-   NULL,               //Stack
-   0,                  //Size of the stack
-   OS_CFG_PRIO_MAX - 1 //Task priority
+   NULL,                  //Task control block
+   NULL,                  //Stack
+   0,                     //Size of the stack
+   taskIDLE_PRIORITY + 1, //Task priority
 };
+
+//Declaration of functions
+extern portBaseType xInitializeScheduler(void);
 
 
 /**
@@ -54,10 +56,8 @@ const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 
 void osInitKernel(void)
 {
-   OS_ERR err;
-
-   //Scheduler initialization
-   OSInit(&err);
+   //Initialize kernel
+   xInitializeScheduler();
 }
 
 
@@ -67,10 +67,8 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-   OS_ERR err;
-
    //Start the scheduler
-   OSStart(&err);
+   xTaskStartScheduler(pdTRUE);
 }
 
 
@@ -83,43 +81,47 @@ void osStartKernel(void)
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+__weak_func OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *arg, const OsTaskParameters *params)
 {
-   OS_ERR err;
-   CPU_STK stackLimit;
-   OsTaskId taskId;
+   portBaseType status;
+   portTaskHandleType handle;
+   xTaskParameters taskParams;
 
    //Check parameters
    if(params->tcb != NULL && params->stack != NULL)
    {
-      //The watermark limit is used to monitor and ensure that the stack
-      //does not overflow
-      stackLimit = params->stackSize / 10;
+      //Initialize task parameters
+      memset(&taskParams, 0, sizeof(taskParams));
+
+      //Set task parameters
+      taskParams.pvTaskCode = (pdTASK_CODE) taskCode;
+      taskParams.pcTaskName = name;
+      taskParams.pxTCB = params->tcb;
+      taskParams.pcStackBuffer = params->stack;
+      taskParams.ulStackDepthBytes = params->stackSize;
+      taskParams.pvParameters = arg;
+      taskParams.uxPriority = params->priority;
+      taskParams.xUsingFPU =  pdTRUE;
+      taskParams.xMPUParameters.uxPrivilegeLevel = mpuPRIVILEGED_TASK;
 
       //Create a new task
-      OSTaskCreate(params->tcb, (CPU_CHAR *) name, taskCode, arg,
-         params->priority, params->stack, stackLimit, params->stackSize, 0, 1,
-         NULL, OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
+      status = xTaskCreate(&taskParams, &handle);
 
-      //Check whether the task was successfully created
-      if(err == OS_ERR_NONE)
+      //Failed to create task?
+      if(status != pdPASS)
       {
-         taskId = (OsTaskId) params->tcb;
-      }
-      else
-      {
-         taskId = OS_INVALID_TASK_ID;
+         handle = OS_INVALID_TASK_ID;
       }
    }
    else
    {
       //Invalid parameters
-      taskId = OS_INVALID_TASK_ID;
+      handle = OS_INVALID_TASK_ID;
    }
 
    //Return the handle referencing the newly created task
-   return taskId;
+   return (OsTaskId) handle;
 }
 
 
@@ -130,10 +132,8 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
 
 void osDeleteTask(OsTaskId taskId)
 {
-   OS_ERR err;
-
    //Delete the specified task
-   OSTaskDel((OS_TCB *) taskId, &err);
+   xTaskDelete((portTaskHandleType) taskId);
 }
 
 
@@ -144,10 +144,8 @@ void osDeleteTask(OsTaskId taskId)
 
 void osDelayTask(systime_t delay)
 {
-   OS_ERR err;
-
    //Delay the task for the specified duration
-   OSTimeDly(OS_MS_TO_SYSTICKS(delay), OS_OPT_TIME_DLY, &err);
+   xTaskDelay(OS_MS_TO_SYSTICKS(delay));
 }
 
 
@@ -158,7 +156,7 @@ void osDelayTask(systime_t delay)
 void osSwitchTask(void)
 {
    //Force a context switch
-   OSSched();
+   taskYIELD();
 }
 
 
@@ -168,13 +166,11 @@ void osSwitchTask(void)
 
 void osSuspendAllTasks(void)
 {
-   OS_ERR err;
-
    //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
+   if(xTaskIsSchedulerStarted() == pdTRUE)
    {
-      //Suspend scheduler activity
-      OSSchedLock(&err);
+      //Suspend all tasks
+      vTaskSuspendScheduler();
    }
 }
 
@@ -185,13 +181,11 @@ void osSuspendAllTasks(void)
 
 void osResumeAllTasks(void)
 {
-   OS_ERR err;
-
    //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
+   if(xTaskIsSchedulerStarted() == pdTRUE)
    {
-      //Resume scheduler activity
-      OSSchedUnlock(&err);
+      //Resume all tasks
+      xTaskResumeScheduler();
    }
 }
 
@@ -205,18 +199,27 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
-   OS_ERR err;
+   portBaseType status;
 
-   //Create an event flag group
-   OSFlagCreate(event, "EVENT", 0, &err);
+   uint32_t n;
+   uint32_t p = (uint32_t) event->buffer;
+   n = p % portQUEUE_OVERHEAD_BYTES;
+   p += portQUEUE_OVERHEAD_BYTES - n;
 
-   //Check whether the event flag group was successfully created
-   if(err == OS_ERR_NONE)
+   //Create a binary semaphore
+   status = xSemaphoreCreateBinary((portInt8Type *) p, &event->handle);
+
+   //Check whether the semaphore was successfully created
+   if(status == pdPASS)
    {
+      //Force the event to the nonsignaled state
+      xSemaphoreTake(event->handle, 0);
+      //Event successfully created
       return TRUE;
    }
    else
    {
+      //Failed to create event object
       return FALSE;
    }
 }
@@ -229,14 +232,7 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the event object
-      OSFlagDel(event, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Not implemented
 }
 
 
@@ -247,10 +243,8 @@ void osDeleteEvent(OsEvent *event)
 
 void osSetEvent(OsEvent *event)
 {
-   OS_ERR err;
-
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   xSemaphoreGive(event->handle);
 }
 
 
@@ -261,10 +255,8 @@ void osSetEvent(OsEvent *event)
 
 void osResetEvent(OsEvent *event)
 {
-   OS_ERR err;
-
    //Force the specified event to the nonsignaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_CLR, &err);
+   xSemaphoreTake(event->handle, 0);
 }
 
 
@@ -278,38 +270,26 @@ void osResetEvent(OsEvent *event)
 
 bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
-   OS_ERR err;
+   portBaseType status;
 
    //Wait until the specified event is in the signaled state or the timeout
    //interval elapses
-   if(timeout == 0)
-   {
-      //Non-blocking call
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_NON_BLOCKING, NULL, &err);
-   }
-   else if(timeout == INFINITE_DELAY)
+   if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      status = xSemaphoreTake(event->handle, portMAX_DELAY);
    }
    else
    {
-      //Wait until the specified event becomes set
-      OSFlagPend(event, 1, OS_MS_TO_SYSTICKS(timeout), OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      //Wait for the specified time interval
+      status = xSemaphoreTake(event->handle, OS_MS_TO_SYSTICKS(timeout));
    }
 
-   //Check whether the specified event is set
-   if(err == OS_ERR_NONE)
-   {
+   //The return value tells whether the event is set
+   if(status == pdPASS)
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -322,13 +302,13 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
 bool_t osSetEventFromIsr(OsEvent *event)
 {
-   OS_ERR err;
+   portBaseType flag = FALSE;
 
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   xSemaphoreGiveFromISR(event->handle, &flag);
 
-   //The return value is not relevant
-   return FALSE;
+   //A higher priority task has been woken?
+   return flag;
 }
 
 
@@ -343,20 +323,22 @@ bool_t osSetEventFromIsr(OsEvent *event)
 
 bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
-   OS_ERR err;
+   portBaseType status;
+
+   uint32_t n;
+   uint32_t p = (uint32_t) semaphore->buffer;
+   n = p % portQUEUE_OVERHEAD_BYTES;
+   p += portQUEUE_OVERHEAD_BYTES - n;
 
    //Create a semaphore
-   OSSemCreate(semaphore, "SEMAPHORE", count, &err);
+   status = xSemaphoreCreateCounting(count, count, (portInt8Type *) p,
+      &semaphore->handle);
 
    //Check whether the semaphore was successfully created
-   if(err == OS_ERR_NONE)
-   {
+   if(status == pdPASS)
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -367,14 +349,7 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
 void osDeleteSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified semaphore
-      OSSemDel(semaphore, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Not implemented
 }
 
 
@@ -388,35 +363,25 @@ void osDeleteSemaphore(OsSemaphore *semaphore)
 
 bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 {
-   OS_ERR err;
+   portBaseType status;
 
-   //Wait until the semaphore is available or the timeout interval elapses
-   if(timeout == 0)
-   {
-      //Non-blocking call
-      OSSemPend(semaphore, 0, OS_OPT_PEND_NON_BLOCKING, NULL, &err);
-   }
-   else if(timeout == INFINITE_DELAY)
+   //Wait until the specified semaphore becomes available
+   if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSSemPend(semaphore, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+      status = xSemaphoreTake(semaphore->handle, portMAX_DELAY);
    }
    else
    {
-      //Wait until the specified semaphore becomes available
-      OSSemPend(semaphore, OS_MS_TO_SYSTICKS(timeout),
-         OS_OPT_PEND_BLOCKING, NULL, &err);
+      //Wait for the specified time interval
+      status = xSemaphoreTake(semaphore->handle, OS_MS_TO_SYSTICKS(timeout));
    }
 
-   //Check whether the specified semaphore is available
-   if(err == OS_ERR_NONE)
-   {
+   //The return value tells whether the semaphore is available
+   if(status == pdPASS)
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -427,10 +392,8 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
 void osReleaseSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
    //Release the semaphore
-   OSSemPost(semaphore, OS_OPT_POST_1, &err);
+   xSemaphoreGive(semaphore->handle);
 }
 
 
@@ -443,18 +406,28 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
-   OS_ERR err;
+   portBaseType status;
 
-   //Create a mutex
-   OSMutexCreate(mutex, "MUTEX", &err);
+   uint32_t n;
+   uint32_t p = (uint32_t) mutex->buffer;
+   n = p % portQUEUE_OVERHEAD_BYTES;
+   p += portQUEUE_OVERHEAD_BYTES - n;
 
-   //Check whether the mutex was successfully created
-   if(err == OS_ERR_NONE)
+   //Create a binary semaphore
+   status = xSemaphoreCreateBinary((portInt8Type *) p, &mutex->handle);
+
+   //Check whether the semaphore was successfully created
+   if(status == pdPASS)
    {
+      //Force the binary semaphore to the signaled state
+      xSemaphoreGive(mutex->handle);
+
+      //Semaphore successfully created
       return TRUE;
    }
    else
    {
+      //Failed to create semaphore
       return FALSE;
    }
 }
@@ -467,14 +440,7 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified mutex
-      OSMutexDel(mutex, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //Not implemented
 }
 
 
@@ -485,10 +451,8 @@ void osDeleteMutex(OsMutex *mutex)
 
 void osAcquireMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
    //Obtain ownership of the mutex object
-   OSMutexPend(mutex, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+   xSemaphoreTake(mutex->handle, portMAX_DELAY);
 }
 
 
@@ -499,10 +463,8 @@ void osAcquireMutex(OsMutex *mutex)
 
 void osReleaseMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
    //Release ownership of the mutex object
-   OSMutexPost(mutex, OS_OPT_POST_NONE, &err);
+   xSemaphoreGive(mutex->handle);
 }
 
 
@@ -513,11 +475,10 @@ void osReleaseMutex(OsMutex *mutex)
 
 systime_t osGetSystemTime(void)
 {
-   OS_ERR err;
    systime_t time;
 
    //Get current tick count
-   time = OSTimeGet(&err);
+   time = xTaskGetTickCount();
 
    //Convert system ticks to milliseconds
    return OS_SYSTICKS_TO_MS(time);
@@ -533,21 +494,8 @@ systime_t osGetSystemTime(void)
 
 __weak_func void *osAllocMem(size_t size)
 {
-   void *p;
-
-   //Enter critical section
-   osSuspendAllTasks();
-   //Allocate a memory block
-   p = malloc(size);
-   //Leave critical section
-   osResumeAllTasks();
-
-   //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
-
-   //Return a pointer to the newly allocated memory block
-   return p;
+   //Not implemented
+   return NULL;
 }
 
 
@@ -558,17 +506,5 @@ __weak_func void *osAllocMem(size_t size)
 
 __weak_func void osFreeMem(void *p)
 {
-   //Make sure the pointer is valid
-   if(p != NULL)
-   {
-      //Debug message
-      TRACE_DEBUG("Freeing memory at 0x%08" PRIXPTR "\r\n", (uintptr_t) p);
-
-      //Enter critical section
-      osSuspendAllTasks();
-      //Free memory block
-      free(p);
-      //Leave critical section
-      osResumeAllTasks();
-   }
+   //Not implemented
 }

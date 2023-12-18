@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -66,16 +66,15 @@ void osStartKernel(void)
 
 /**
  * @brief Create a task
- * @param[in] name A name identifying the task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
    Error_Block eb;
    Task_Params taskParams;
@@ -86,14 +85,14 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
 
    //Set parameters
    Task_Params_init(&taskParams);
-   taskParams.arg0 = (UArg) param;
-   taskParams.stackSize = stackSize * sizeof(uint32_t);
-   taskParams.priority = priority;
+   taskParams.arg0 = (UArg) arg;
+   taskParams.stackSize = params->stackSize * sizeof(uint32_t);
+   taskParams.priority = params->priority;
 
    //Create a new task
    handle = Task_create((Task_FuncPtr) taskCode, &taskParams, &eb);
 
-   //Return a handle to the newly created task
+   //Return the handle referencing the newly created task
    return (OsTaskId) handle;
 }
 

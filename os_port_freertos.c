@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,17 @@
 #include "os_port.h"
 #include "os_port_freertos.h"
 #include "debug.h"
+
+//Default task parameters
+const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+{
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   NULL,                     //Task control block
+   NULL,                     //Stack
+#endif
+   configMINIMAL_STACK_SIZE, //Size of the stack
+   tskIDLE_PRIORITY + 1      //Task priority
+};
 
 
 /**
@@ -59,74 +70,47 @@ void osStartKernel(void)
 
 /**
  * @brief Create a task
- * @param[in] name A name identifying the task
+ * @param[in] name NULL-terminated string identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
+ * @param[in] arg Argument passed to the task function
+ * @param[in] params Task parameters
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority)
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params)
 {
    portBASE_TYPE status;
    TaskHandle_t handle;
 
 #ifdef IDF_VER
-   //Create a new task (the stack size is specified in bytes)
-   status = xTaskCreate((TaskFunction_t) taskCode, name,
-      stackSize * sizeof(uint32_t), param, priority, &handle);
-#else
-   //Create a new task (the stack size is specified in words)
-   status = xTaskCreate((TaskFunction_t) taskCode, name, stackSize, param,
-      priority, &handle);
+   //The stack size is specified in bytes
+   stackSize *= sizeof(uint32_t);
 #endif
-
-   //Check whether the task was successfully created
-   if(status == pdPASS)
-   {
-      return (OsTaskId) handle;
-   }
-   else
-   {
-      return OS_INVALID_TASK_ID;
-   }
-}
-
-
-/**
- * @brief Create a task with statically allocated memory
- * @param[in] name A name identifying the task
- * @param[in] taskCode Pointer to the task entry function
- * @param[in] param A pointer to a variable to be passed to the task
- * @param[in] tcb Pointer to the task control block
- * @param[in] stack Pointer to the stack
- * @param[in] stackSize The initial size of the stack, in words
- * @param[in] priority The priority at which the task should run
- * @return Task identifier referencing the newly created task
- **/
-
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority)
-{
-   TaskHandle_t handle;
 
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
-#ifdef IDF_VER
-   //Create a new task (the stack size is specified in bytes)
-   handle = xTaskCreateStatic((TaskFunction_t) taskCode, name,
-      stackSize * sizeof(uint32_t), param, priority, (StackType_t *) stack, tcb);
-#else
-   //Create a new task (the stack size is specified in words)
-   handle = xTaskCreateStatic((TaskFunction_t) taskCode, name, stackSize,
-      param, priority, stack, tcb);
+   //Static allocation?
+   if(params->tcb != NULL && params->stack != NULL)
+   {
+      //Create a new task
+      handle = xTaskCreateStatic((TaskFunction_t) taskCode, name,
+         params->stackSize, arg, params->priority,
+         (StackType_t *) params->stack, params->tcb);
+   }
+   else
 #endif
-#else
-   //Not implemented
-   handle = NULL;
-#endif
+   //Dynamic allocation?
+   {
+      //Create a new task
+      status = xTaskCreate((TaskFunction_t) taskCode, name, params->stackSize,
+         arg, params->priority, &handle);
+
+      //Failed to create task?
+      if(status != pdPASS)
+      {
+         handle = OS_INVALID_TASK_ID;
+      }
+   }
 
    //Return the handle referencing the newly created task
    return (OsTaskId) handle;

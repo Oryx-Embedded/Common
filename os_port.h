@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _OS_PORT_H
@@ -36,8 +36,6 @@
 //Compilation flags used to enable/disable features
 #define ENABLED  1
 #define DISABLED 0
-
-#define PTR_OFFSET(addr, offset) ((void *) ((uint8_t *) (addr) + (offset)))
 
 #define timeCompare(t1, t2) ((int32_t) ((t1) - (t2)))
 

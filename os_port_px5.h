@@ -1,6 +1,6 @@
 /**
- * @file os_port_none.h
- * @brief RTOS-less environment
+ * @file os_port_px5.h
+ * @brief RTOS abstraction layer (PX5)
  *
  * @section License
  *
@@ -26,22 +26,27 @@
  * @version 2.3.4
  **/
 
-#ifndef _OS_PORT_NONE_H
-#define _OS_PORT_NONE_H
+#ifndef _OS_PORT_PX5_H
+#define _OS_PORT_PX5_H
+
+//Dependencies
+#include "px5_sched.h"
+#include "px5_pthread.h"
+#include "px5_semaphore.h"
 
 //Invalid task identifier
-#define OS_INVALID_TASK_ID 0
+#define OS_INVALID_TASK_ID NULL
 //Self task identifier
-#define OS_SELF_TASK_ID 0
+#define OS_SELF_TASK_ID NULL
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
-   #define OS_TASK_PRIORITY_NORMAL 0
+   #define OS_TASK_PRIORITY_NORMAL PX5_DEFAULT_PRIORITY
 #endif
 
 //Task priority (high)
 #ifndef OS_TASK_PRIORITY_HIGH
-   #define OS_TASK_PRIORITY_HIGH 0
+   #define OS_TASK_PRIORITY_HIGH (PX5_DEFAULT_PRIORITY + 1)
 #endif
 
 //Milliseconds to system ticks
@@ -63,16 +68,10 @@
 #define osEnterTask()
 //Task epilogue
 #define osExitTask()
-
 //Interrupt service routine prologue
-#ifndef osEnterIsr
-   #define osEnterIsr()
-#endif
-
+#define osEnterIsr()
 //Interrupt service routine epilogue
-#ifndef osExitIsr
-   #define osExitIsr(flag) (void) flag
-#endif
+#define osExitIsr(flag)
 
 //C++ guard
 #ifdef __cplusplus
@@ -84,14 +83,14 @@ extern "C" {
  * @brief System time
  **/
 
-typedef uint32_t systime_t;
+typedef tick_t systime_t;
 
 
 /**
  * @brief Task identifier
  **/
 
-typedef uint_t OsTaskId;
+typedef px5_pthread_t OsTaskId;
 
 
 /**
@@ -100,6 +99,7 @@ typedef uint_t OsTaskId;
 
 typedef struct
 {
+   uint32_t *stack;
    size_t stackSize;
    uint_t priority;
 } OsTaskParameters;
@@ -109,21 +109,21 @@ typedef struct
  * @brief Event object
  **/
 
-typedef uint_t OsEvent;
+typedef px5_sem_t OsEvent;
 
 
 /**
  * @brief Semaphore object
  **/
 
-typedef uint_t OsSemaphore;
+typedef px5_sem_t OsSemaphore;
 
 
 /**
  * @brief Mutex object
  **/
 
-typedef uint_t OsMutex;
+typedef px5_pthread_mutex_t OsMutex;
 
 
 /**
@@ -132,8 +132,6 @@ typedef uint_t OsMutex;
 
 typedef void (*OsTaskCode)(void *arg);
 
-//Tick count
-extern volatile systime_t systemTicks;
 
 //Default task parameters
 extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;

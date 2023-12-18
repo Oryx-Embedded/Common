@@ -1,6 +1,6 @@
 /**
- * @file os_port_ucos3.c
- * @brief RTOS abstraction layer (Micrium uC/OS-III)
+ * @file os_port_zephyr.c
+ * @brief RTOS abstraction layer (Zephyr)
  *
  * @section License
  *
@@ -32,19 +32,17 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "os_port.h"
-#include "os_port_ucos3.h"
-#include "os_cfg.h"
+#include "os_port_zephyr.h"
 #include "debug.h"
 
 //Default task parameters
 const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 {
-   NULL,               //Task control block
-   NULL,               //Stack
-   0,                  //Size of the stack
-   OS_CFG_PRIO_MAX - 1 //Task priority
+   NULL,                             //Task control block
+   NULL,                             //Stack
+   0,                                //Size of the stack
+   CONFIG_NUM_PREEMPT_PRIORITIES - 1 //Task priority
 };
 
 
@@ -54,10 +52,7 @@ const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 
 void osInitKernel(void)
 {
-   OS_ERR err;
-
-   //Scheduler initialization
-   OSInit(&err);
+   //Not implemented
 }
 
 
@@ -67,10 +62,7 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-   OS_ERR err;
-
-   //Start the scheduler
-   OSStart(&err);
+   //Not implemented
 }
 
 
@@ -86,40 +78,31 @@ void osStartKernel(void)
 OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    const OsTaskParameters *params)
 {
-   OS_ERR err;
-   CPU_STK stackLimit;
-   OsTaskId taskId;
+   k_tid_t tid;
 
    //Check parameters
    if(params->tcb != NULL && params->stack != NULL)
    {
-      //The watermark limit is used to monitor and ensure that the stack
-      //does not overflow
-      stackLimit = params->stackSize / 10;
+      //Create a new thread
+      tid = k_thread_create(params->tcb, params->stack, params->stackSize,
+         (k_thread_entry_t) taskCode, arg, NULL, NULL, params->priority, 0,
+         K_NO_WAIT);
 
-      //Create a new task
-      OSTaskCreate(params->tcb, (CPU_CHAR *) name, taskCode, arg,
-         params->priority, params->stack, stackLimit, params->stackSize, 0, 1,
-         NULL, OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
-
-      //Check whether the task was successfully created
-      if(err == OS_ERR_NONE)
+      //Check whether the thread was successfully created
+      if(tid != OS_INVALID_TASK_ID)
       {
-         taskId = (OsTaskId) params->tcb;
-      }
-      else
-      {
-         taskId = OS_INVALID_TASK_ID;
+         //Set current thread name
+         k_thread_name_set(tid, name);
       }
    }
    else
    {
       //Invalid parameters
-      taskId = OS_INVALID_TASK_ID;
+      tid = OS_INVALID_TASK_ID;
    }
 
-   //Return the handle referencing the newly created task
-   return taskId;
+   //Return the handle referencing the newly created thread
+   return (OsTaskId) tid;
 }
 
 
@@ -130,10 +113,20 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
 
 void osDeleteTask(OsTaskId taskId)
 {
-   OS_ERR err;
+   k_tid_t tid;
 
-   //Delete the specified task
-   OSTaskDel((OS_TCB *) taskId, &err);
+   //Delete the currently running thread?
+   if(taskId == OS_SELF_TASK_ID)
+   {
+      tid = k_current_get();
+   }
+   else
+   {
+      tid = (k_tid_t) taskId;
+   }
+
+   //Abort the thread
+   k_thread_abort(tid);
 }
 
 
@@ -144,10 +137,8 @@ void osDeleteTask(OsTaskId taskId)
 
 void osDelayTask(systime_t delay)
 {
-   OS_ERR err;
-
-   //Delay the task for the specified duration
-   OSTimeDly(OS_MS_TO_SYSTICKS(delay), OS_OPT_TIME_DLY, &err);
+   //Put the current thread to sleep
+   k_sleep(K_MSEC(delay));
 }
 
 
@@ -157,8 +148,8 @@ void osDelayTask(systime_t delay)
 
 void osSwitchTask(void)
 {
-   //Force a context switch
-   OSSched();
+   //Wake up a sleeping thread
+   k_yield();
 }
 
 
@@ -168,14 +159,8 @@ void osSwitchTask(void)
 
 void osSuspendAllTasks(void)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Suspend scheduler activity
-      OSSchedLock(&err);
-   }
+   //Lock the scheduler
+   k_sched_lock();
 }
 
 
@@ -185,14 +170,8 @@ void osSuspendAllTasks(void)
 
 void osResumeAllTasks(void)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Resume scheduler activity
-      OSSchedUnlock(&err);
-   }
+   //Unlock the scheduler
+   k_sched_unlock();
 }
 
 
@@ -205,19 +184,19 @@ void osResumeAllTasks(void)
 
 bool_t osCreateEvent(OsEvent *event)
 {
-   OS_ERR err;
+   int err;
 
-   //Create an event flag group
-   OSFlagCreate(event, "EVENT", 0, &err);
+   //Create a binary semaphore
+   err = k_sem_init(event, 0, 1);
 
-   //Check whether the event flag group was successfully created
-   if(err == OS_ERR_NONE)
+   //Check whether the semaphore was successfully created
+   if(err)
    {
-      return TRUE;
+      return FALSE;
    }
    else
    {
-      return FALSE;
+      return TRUE;
    }
 }
 
@@ -229,14 +208,7 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the event object
-      OSFlagDel(event, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //No resource to release
 }
 
 
@@ -247,10 +219,8 @@ void osDeleteEvent(OsEvent *event)
 
 void osSetEvent(OsEvent *event)
 {
-   OS_ERR err;
-
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   k_sem_give(event);
 }
 
 
@@ -261,10 +231,8 @@ void osSetEvent(OsEvent *event)
 
 void osResetEvent(OsEvent *event)
 {
-   OS_ERR err;
-
    //Force the specified event to the nonsignaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_CLR, &err);
+   k_sem_reset(event);
 }
 
 
@@ -278,37 +246,34 @@ void osResetEvent(OsEvent *event)
 
 bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
-   OS_ERR err;
+   int err;
 
    //Wait until the specified event is in the signaled state or the timeout
    //interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_NON_BLOCKING, NULL, &err);
+      err = k_sem_take(event, K_NO_WAIT);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSFlagPend(event, 1, 0, OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      err = k_sem_take(event, K_FOREVER);
    }
    else
    {
       //Wait until the specified event becomes set
-      OSFlagPend(event, 1, OS_MS_TO_SYSTICKS(timeout), OS_OPT_PEND_FLAG_SET_ANY |
-         OS_OPT_PEND_FLAG_CONSUME | OS_OPT_PEND_BLOCKING, NULL, &err);
+      err = k_sem_take(event, K_MSEC(timeout));
    }
 
    //Check whether the specified event is set
-   if(err == OS_ERR_NONE)
+   if(err)
    {
-      return TRUE;
+      return FALSE;
    }
    else
    {
-      return FALSE;
+      return TRUE;
    }
 }
 
@@ -322,10 +287,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
 bool_t osSetEventFromIsr(OsEvent *event)
 {
-   OS_ERR err;
-
    //Set the specified event to the signaled state
-   OSFlagPost(event, 1, OS_OPT_POST_FLAG_SET, &err);
+   k_sem_give(event);
 
    //The return value is not relevant
    return FALSE;
@@ -343,19 +306,19 @@ bool_t osSetEventFromIsr(OsEvent *event)
 
 bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 {
-   OS_ERR err;
+   int err;
 
-   //Create a semaphore
-   OSSemCreate(semaphore, "SEMAPHORE", count, &err);
+   //Initialize the semaphore object
+   err = k_sem_init(semaphore, count, count);
 
    //Check whether the semaphore was successfully created
-   if(err == OS_ERR_NONE)
+   if(err)
    {
-      return TRUE;
+      return FALSE;
    }
    else
    {
-      return FALSE;
+      return TRUE;
    }
 }
 
@@ -367,14 +330,7 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
 void osDeleteSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified semaphore
-      OSSemDel(semaphore, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //No resource to release
 }
 
 
@@ -388,34 +344,33 @@ void osDeleteSemaphore(OsSemaphore *semaphore)
 
 bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 {
-   OS_ERR err;
+   int err;
 
    //Wait until the semaphore is available or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
-      OSSemPend(semaphore, 0, OS_OPT_PEND_NON_BLOCKING, NULL, &err);
+      err = k_sem_take(semaphore, K_NO_WAIT);
    }
    else if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
-      OSSemPend(semaphore, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+      err = k_sem_take(semaphore, K_FOREVER);
    }
    else
    {
       //Wait until the specified semaphore becomes available
-      OSSemPend(semaphore, OS_MS_TO_SYSTICKS(timeout),
-         OS_OPT_PEND_BLOCKING, NULL, &err);
+      err = k_sem_take(semaphore, K_MSEC(timeout));
    }
 
    //Check whether the specified semaphore is available
-   if(err == OS_ERR_NONE)
+   if(err)
    {
-      return TRUE;
+      return FALSE;
    }
    else
    {
-      return FALSE;
+      return TRUE;
    }
 }
 
@@ -427,10 +382,8 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
 void osReleaseSemaphore(OsSemaphore *semaphore)
 {
-   OS_ERR err;
-
-   //Release the semaphore
-   OSSemPost(semaphore, OS_OPT_POST_1, &err);
+   //Give the semaphore
+   k_sem_give(semaphore);
 }
 
 
@@ -443,19 +396,19 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
 
 bool_t osCreateMutex(OsMutex *mutex)
 {
-   OS_ERR err;
+   int err;
 
-   //Create a mutex
-   OSMutexCreate(mutex, "MUTEX", &err);
+   //Initialize the mutex object
+   err = k_mutex_init(mutex);
 
    //Check whether the mutex was successfully created
-   if(err == OS_ERR_NONE)
+   if(err)
    {
-      return TRUE;
+      return FALSE;
    }
    else
    {
-      return FALSE;
+      return TRUE;
    }
 }
 
@@ -467,14 +420,7 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
-   //Make sure the operating system is running
-   if(OSRunning == OS_STATE_OS_RUNNING)
-   {
-      //Properly dispose the specified mutex
-      OSMutexDel(mutex, OS_OPT_DEL_ALWAYS, &err);
-   }
+   //No resource to release
 }
 
 
@@ -485,10 +431,8 @@ void osDeleteMutex(OsMutex *mutex)
 
 void osAcquireMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
-   //Obtain ownership of the mutex object
-   OSMutexPend(mutex, 0, OS_OPT_PEND_BLOCKING, NULL, &err);
+   //Lock the mutex
+   k_mutex_lock(mutex, K_FOREVER);
 }
 
 
@@ -499,10 +443,8 @@ void osAcquireMutex(OsMutex *mutex)
 
 void osReleaseMutex(OsMutex *mutex)
 {
-   OS_ERR err;
-
-   //Release ownership of the mutex object
-   OSMutexPost(mutex, OS_OPT_POST_NONE, &err);
+   //Unlock the mutex
+   k_mutex_unlock(mutex);
 }
 
 
@@ -513,14 +455,20 @@ void osReleaseMutex(OsMutex *mutex)
 
 systime_t osGetSystemTime(void)
 {
-   OS_ERR err;
-   systime_t time;
+   //Get the elapsed time since the system booted, in milliseconds
+   return (systime_t) k_uptime_get();
+}
 
-   //Get current tick count
-   time = OSTimeGet(&err);
 
-   //Convert system ticks to milliseconds
-   return OS_SYSTICKS_TO_MS(time);
+/**
+ * @brief Retrieve 64-bit system time
+ * @return Number of milliseconds elapsed since the system was last started
+ **/
+
+uint64_t osGetSystemTime64(void)
+{
+   //Get the elapsed time since the system booted, in milliseconds
+   return (uint64_t) k_uptime_get();
 }
 
 
@@ -538,7 +486,7 @@ __weak_func void *osAllocMem(size_t size)
    //Enter critical section
    osSuspendAllTasks();
    //Allocate a memory block
-   p = malloc(size);
+   p = k_malloc(size);
    //Leave critical section
    osResumeAllTasks();
 
@@ -567,7 +515,7 @@ __weak_func void osFreeMem(void *p)
       //Enter critical section
       osSuspendAllTasks();
       //Free memory block
-      free(p);
+      k_free(p);
       //Leave critical section
       osResumeAllTasks();
    }

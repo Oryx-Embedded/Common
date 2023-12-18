@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _OS_PORT_EMBOS_H
@@ -31,9 +31,6 @@
 
 //Dependencies
 #include "rtos.h"
-
-//Use static memory allocation for tasks
-#define OS_STATIC_TASK_SUPPORT ENABLED
 
 //Invalid task identifier
 #define OS_INVALID_TASK_ID NULL
@@ -95,17 +92,16 @@ typedef OS_TASK *OsTaskId;
 
 
 /**
- * @brief Task control block
+ * @brief Task parameters
  **/
 
-typedef OS_TASK OsTaskTcb;
-
-
-/**
- * @brief Stack data type
- **/
-
-typedef uint32_t OsStackType;
+typedef struct
+{
+   OS_TASK *tcb;
+   uint32_t *stack;
+   size_t stackSize;
+   uint_t priority;
+} OsTaskParameters;
 
 
 /**
@@ -133,20 +129,19 @@ typedef OS_RSEMA OsMutex;
  * @brief Task routine
  **/
 
-typedef void (*OsTaskCode)(void *param);
+typedef void (*OsTaskCode)(void *arg);
 
+
+//Default task parameters
+extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;
 
 //Kernel management
 void osInitKernel(void);
 void osStartKernel(void);
 
 //Task management
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode,
-   void *param, size_t stackSize, int_t priority);
-
-OsTaskId osCreateStaticTask(const char_t *name, OsTaskCode taskCode,
-   void *param, OsTaskTcb *tcb, OsStackType *stack, size_t stackSize,
-   int_t priority);
+OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const OsTaskParameters *params);
 
 void osDeleteTask(OsTaskId taskId);
 void osDelayTask(systime_t delay);
