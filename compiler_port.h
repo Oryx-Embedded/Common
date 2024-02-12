@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -64,9 +64,15 @@ typedef unsigned int uint_t;
    #define PRIuTIME "lu"
 //Microchip XC32 compiler?
 #elif defined(__XC32)
-   #define PRIuSIZE "u"
-   #define PRIXSIZE "X"
-   #define PRIuTIME "u"
+   #if defined(__C32_LEGACY_LIBC__)
+      #define PRIuSIZE "lu"
+      #define PRIXSIZE "lX"
+      #define PRIuTIME "lu"
+   #else
+      #define PRIuSIZE "u"
+      #define PRIXSIZE "X"
+      #define PRIuTIME "u"
+   #endif
 //NXP MCUXpresso compiler?
 #elif defined(__MCUXPRESSO)
    #undef PRIu64
@@ -105,8 +111,8 @@ typedef unsigned int uint_t;
    #define PRIuSIZE "u"
    #define PRIXSIZE "X"
    #define PRIuTIME "lu"
-//Linux GCC compiler
-#elif defined(__linux__)
+//Linux/FreeBSD GCC compiler
+#elif defined(__linux__) || defined(__FreeBSD__)
    #define PRIuSIZE "zu"
    #define PRIXSIZE "zX"
    #define PRIuTIME "lu"
