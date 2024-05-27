@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 #ifndef _ERROR_H
@@ -215,6 +215,7 @@ typedef enum
    ERROR_NO_ACK,
    ERROR_INVALID_METADATA,
    ERROR_NOT_CONFIGURED,
+   ERROR_ALREADY_CONFIGURED,
    ERROR_NAME_RESOLUTION_FAILED,
    ERROR_NO_ROUTE,
 

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -107,7 +107,6 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    threadDef.attr.stack_size = params->stackSize * sizeof(uint32_t);
    threadDef.attr.priority = (osPriority_t) params->priority;
    threadDef.attr.tz_module = 0;
-   threadDef.attr.reserved = 0;
 #elif defined(osCMSIS_FreeRTOS)
    threadDef.pthread = (os_pthread) taskCode;
    threadDef.attr.name = name;
@@ -118,7 +117,6 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    threadDef.attr.stack_size = params->stackSize * sizeof(uint32_t);
    threadDef.attr.priority = (osPriority_t) params->priority;
    threadDef.attr.tz_module = 0;
-   threadDef.attr.reserved = 0;
 #else
    threadDef.name = (char_t *) name;
    threadDef.pthread = (os_pthread) taskCode;

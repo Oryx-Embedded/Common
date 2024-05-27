@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -93,7 +93,6 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    threadAttr.stack_size = params->stackSize * sizeof(uint32_t);
    threadAttr.priority = (osPriority_t) params->priority;
    threadAttr.tz_module = 0;
-   threadAttr.reserved = 0;
 
    //Static allocation?
    if(params->cb != NULL)
