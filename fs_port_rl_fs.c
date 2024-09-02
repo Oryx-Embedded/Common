@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Dependencies
@@ -47,7 +47,7 @@ __weak_func error_t fsInit(void)
    fsStatus status;
 
    //Initialize file system
-   status = finit ("M0:");
+   status = finit("M0:");
 
    //Check status code
    if(status == fsOK)
@@ -479,7 +479,7 @@ bool_t fsDirExists(const char_t *path)
    if(path != NULL)
    {
       //Root directory?
-      if(!osStrcmp(path, "/") || !osStrcmp(path, "\\"))
+      if(osStrcmp(path, "/") == 0 || osStrcmp(path, "\\") == 0)
       {
          //The root directory always exists
          found = TRUE;

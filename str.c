@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Dependencies
@@ -93,9 +93,13 @@ char_t *strTrimWhitespace(char_t *s)
    for(end = NULL; *s != '\0'; s++)
    {
       if(!osIsspace(*s))
+      {
          end = NULL;
+      }
       else if(!end)
+      {
          end = s;
+      }
    }
 
    //Trim whitespace from the end
@@ -120,9 +124,13 @@ void strRemoveTrailingSpace(char_t *s)
    for(end = NULL; *s != '\0'; s++)
    {
       if(!osIsspace(*s))
+      {
          end = NULL;
+      }
       else if(!end)
+      {
          end = s;
+      }
    }
 
    //Trim whitespace from the end

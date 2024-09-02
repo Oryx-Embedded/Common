@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -287,9 +287,13 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
    //The return value tells whether the event is set
    if(status == pdPASS)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -336,9 +340,13 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the semaphore was successfully created
    if(status == pdPASS)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -379,9 +387,13 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //The return value tells whether the semaphore is available
    if(status == pdPASS)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 

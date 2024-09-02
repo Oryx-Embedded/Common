@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Dependencies
@@ -164,12 +164,17 @@ error_t resSearchFile(const char_t *path, DirEntry *dirEntry)
    for(found = FALSE; !found && path[0] != '\0'; path += n + 1)
    {
       //Search for the separator that terminates the current token
-      for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++);
+      for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++)
+      {
+      }
 
       if(n == 0 && path[n] != '\0')
       {
          path++;
-         for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++);
+
+         for(n = 0; path[n] != '\\' && path[n] != '/' && path[n] != '\0'; n++)
+         {
+         }
       }
 
       //Loop through the directory
@@ -302,7 +307,7 @@ size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
 }
 
 
-int_t fclose(FILE * stream)
+int_t fclose(FILE *stream)
 {
    osFreeMem(stream);
    //The stream is successfully closed

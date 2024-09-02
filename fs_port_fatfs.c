@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Dependencies
@@ -184,9 +184,13 @@ bool_t fsFileExists(const char_t *path)
 
    //Valid file?
    if(fno.fattrib & AM_DIR)
+   {
       return FALSE;
+   }
    else
+   {
       return TRUE;
+   }
 }
 
 
@@ -320,7 +324,7 @@ error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
 
 error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 {
-#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+#if (_FS_READONLY == 1 || FF_FS_READONLY == 1)
    //Read-only configuration
    return ERROR_READ_ONLY_ACCESS;
 #else
@@ -363,7 +367,7 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 
 error_t fsDeleteFile(const char_t *path)
 {
-#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+#if (_FS_READONLY == 1 || FF_FS_READONLY == 1)
    //Read-only configuration
    return ERROR_READ_ONLY_ACCESS;
 #else
@@ -534,7 +538,7 @@ error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin)
 
 error_t fsWriteFile(FsFile *file, void *data, size_t length)
 {
-#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+#if (_FS_READONLY == 1 || FF_FS_READONLY == 1)
    //Read-only configuration
    return ERROR_READ_ONLY_ACCESS;
 #else
@@ -675,7 +679,7 @@ bool_t fsDirExists(const char_t *path)
       return FALSE;
 
    //Root directory?
-   if(!osStrcmp(path, "/"))
+   if(osStrcmp(path, "/") == 0)
       return TRUE;
 
 #if ((FATFS_REVISON <= FATFS_R(0, 12, c) && _FS_REENTRANT == 0) || \
@@ -699,9 +703,13 @@ bool_t fsDirExists(const char_t *path)
 
    //Valid directory?
    if(fno.fattrib & AM_DIR)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -713,7 +721,7 @@ bool_t fsDirExists(const char_t *path)
 
 error_t fsCreateDir(const char_t *path)
 {
-#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+#if (_FS_READONLY == 1 || FF_FS_READONLY == 1)
    //Read-only configuration
    return ERROR_READ_ONLY_ACCESS;
 #else
@@ -756,7 +764,7 @@ error_t fsCreateDir(const char_t *path)
 
 error_t fsRemoveDir(const char_t *path)
 {
-#if (_FS_READONLY == 1 || FF_FS_READONLY ==1)
+#if (_FS_READONLY == 1 || FF_FS_READONLY == 1)
    //Read-only configuration
    return ERROR_READ_ONLY_ACCESS;
 #else

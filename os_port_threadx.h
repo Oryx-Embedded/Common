@@ -1,6 +1,6 @@
 /**
  * @file os_port_threadx.h
- * @brief RTOS abstraction layer (Azure RTOS ThreadX)
+ * @brief RTOS abstraction layer (Eclipse ThreadX)
  *
  * @section License
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 #ifndef _OS_PORT_THREADX_H

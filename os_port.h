@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 #ifndef _OS_PORT_H
@@ -97,7 +97,7 @@
 //SafeRTOS port?
 #elif defined(USE_SAFERTOS)
    #include "os_port_safertos.h"
-//Azure RTOS ThreadX port?
+//Eclipse ThreadX port?
 #elif defined(USE_THREADX)
    #include "os_port_threadx.h"
 //Keil RTX port?
@@ -241,6 +241,12 @@
 #ifndef osVsnprintf
    #include <stdio.h>
    #define osVsnprintf(dest, size, format, ap) vsnprintf(dest, size, format, ap)
+#endif
+
+//Convert string to integer
+#ifndef osAtoi
+   #include <stdlib.h>
+   #define osAtoi(s) atoi(s)
 #endif
 
 //Convert string to unsigned long integer

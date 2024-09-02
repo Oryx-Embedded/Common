@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Dependencies
@@ -307,35 +307,65 @@ int_t compareDateTime(const DateTime *date1, const DateTime *date2)
 
    //Perform comparison
    if(date1->year < date2->year)
+   {
       res = -1;
+   }
    else if(date1->year > date2->year)
+   {
       res = 1;
+   }
    else if(date1->month < date2->month)
+   {
       res = -1;
+   }
    else if(date1->month > date2->month)
+   {
       res = 1;
+   }
    else if(date1->day < date2->day)
+   {
       res = -1;
+   }
    else if(date1->day > date2->day)
+   {
       res = 1;
+   }
    else if(date1->hours < date2->hours)
+   {
       res = -1;
+   }
    else if(date1->hours > date2->hours)
+   {
       res = 1;
+   }
    else if(date1->minutes < date2->minutes)
+   {
       res = -1;
+   }
    else if(date1->minutes > date2->minutes)
+   {
       res = 1;
+   }
    else if(date1->seconds < date2->seconds)
+   {
       res = -1;
+   }
    else if(date1->seconds > date2->seconds)
+   {
       res = 1;
+   }
    else if(date1->milliseconds < date2->milliseconds)
+   {
       res = -1;
+   }
    else if(date1->milliseconds > date2->milliseconds)
+   {
       res = 1;
+   }
    else
+   {
       res = 0;
+   }
 
    //Return comparison result
    return res;

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Dependencies
@@ -42,9 +42,13 @@ bool_t pathIsAbsolute(const char_t *path)
 {
    //Determine if the path is absolute or relative
    if(path[0] == '/' || path[0] == '\\')
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -58,9 +62,13 @@ bool_t pathIsRelative(const char_t *path)
 {
    //Determine if the path is absolute or relative
    if(path[0] == '/' || path[0] == '\\')
+   {
       return FALSE;
+   }
    else
+   {
       return TRUE;
+   }
 }
 
 
@@ -164,7 +172,11 @@ void pathCanonicalize(char_t *path)
       if(path[i] == '/' || path[i] == '\\')
       {
          path[k++] = '/';
-         while(path[i] == '/' || path[i] == '\\') i++;
+
+         while(path[i] == '/' || path[i] == '\\')
+         {
+            i++;
+         }
       }
       else
       {
@@ -187,7 +199,7 @@ void pathCanonicalize(char_t *path)
       if(path[i] == '/' || path[i] == '\0')
       {
          //"." element found?
-         if((i - j) == 1 && !osStrncmp(path + j, ".", 1))
+         if((i - j) == 1 && osStrncmp(path + j, ".", 1) == 0)
          {
             //Check whether the pathname is empty?
             if(k == 0)
@@ -210,7 +222,7 @@ void pathCanonicalize(char_t *path)
             }
          }
          //".." element found?
-         else if((i - j) == 2 && !osStrncmp(path + j, "..", 2))
+         else if((i - j) == 2 && osStrncmp(path + j, "..", 2) == 0)
          {
             //Check whether the pathname is empty?
             if(k == 0)
@@ -234,7 +246,7 @@ void pathCanonicalize(char_t *path)
                //Slash separator found?
                if(j < k)
                {
-                  if(!osStrncmp(path + k - j, "..", 2))
+                  if(osStrncmp(path + k - j, "..", 2) == 0)
                   {
                      path[k++] = '.';
                      path[k++] = '.';
@@ -246,14 +258,18 @@ void pathCanonicalize(char_t *path)
 
                   //Append a slash if necessary
                   if(k == 0 && path[0] == '/')
+                  {
                      path[k++] = '/';
+                  }
                   else if(path[i] == '/')
+                  {
                      path[k++] = '/';
+                  }
                }
                //No slash separator found?
                else
                {
-                  if(k == 3 && !osStrncmp(path, "..", 2))
+                  if(k == 3 && osStrncmp(path, "..", 2) == 0)
                   {
                      path[k++] = '.';
                      path[k++] = '.';
@@ -293,7 +309,11 @@ void pathCanonicalize(char_t *path)
          }
 
          //Move to the next token
-         while(path[i] == '/') i++;
+         while(path[i] == '/')
+         {
+            i++;
+         }
+
          j = i;
       }
    } while(path[i++] != '\0');
@@ -349,9 +369,13 @@ void pathRemoveSlash(char_t *path)
    for(end = NULL; *path != '\0'; path++)
    {
       if(*path != '/' && *path != '\\')
+      {
          end = NULL;
+      }
       else if(!end)
+      {
          end = path;
+      }
    }
 
    //Remove the trailing slash characters
@@ -377,7 +401,10 @@ void pathCombine(char_t *path, const char_t *more, size_t maxLen)
       pathAddSlash(path, maxLen);
 
    //Skip any slash character at the beginning of the second path
-   while(*more == '/' || *more == '\\') more++;
+   while(*more == '/' || *more == '\\')
+   {
+      more++;
+   }
 
    //Retrieve the length of the first path
    n1 = osStrlen(path);
@@ -466,7 +493,11 @@ bool_t pathMatch(const char_t *path, const char_t *pattern)
 
    //Check whether the file name matches the specified pattern
    if(path[i] == '\0' && pattern[j] == '\0')
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
