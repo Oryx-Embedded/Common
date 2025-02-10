@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _DEBUG_H
@@ -60,35 +60,45 @@
    #define TRACE_MPI(p, a) osSuspendAllTasks(), mpiDump(stderr, p, a), osResumeAllTasks()
 #endif
 
+#ifndef TRACE_EC_SCALAR
+   #define TRACE_EC_SCALAR(p, a, n) osSuspendAllTasks(), ecScalarDump(stderr, p, a, n), osResumeAllTasks()
+#endif
+
 //Debugging macros
 #if (TRACE_LEVEL >= TRACE_LEVEL_FATAL)
    #define TRACE_FATAL(...) TRACE_PRINTF(__VA_ARGS__)
    #define TRACE_FATAL_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
    #define TRACE_FATAL_MPI(p, a) TRACE_MPI(p, a)
+   #define TRACE_FATAL_EC_SCALAR(p, a, n) TRACE_EC_SCALAR(p, a, n)
 #else
    #define TRACE_FATAL(...)
    #define TRACE_FATAL_ARRAY(p, a, n)
    #define TRACE_FATAL_MPI(p, a)
+   #define TRACE_FATAL_EC_SCALAR(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_ERROR)
    #define TRACE_ERROR(...) TRACE_PRINTF(__VA_ARGS__)
    #define TRACE_ERROR_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
    #define TRACE_ERROR_MPI(p, a) TRACE_MPI(p, a)
+   #define TRACE_ERROR_EC_SCALAR(p, a, n) TRACE_EC_SCALAR(p, a, n)
 #else
    #define TRACE_ERROR(...)
    #define TRACE_ERROR_ARRAY(p, a, n)
    #define TRACE_ERROR_MPI(p, a)
+   #define TRACE_ERROR_EC_SCALAR(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_WARNING)
    #define TRACE_WARNING(...) TRACE_PRINTF(__VA_ARGS__)
    #define TRACE_WARNING_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
    #define TRACE_WARNING_MPI(p, a) TRACE_MPI(p, a)
+   #define TRACE_WARNING_EC_SCALAR(p, a, n) TRACE_EC_SCALAR(p, a, n)
 #else
    #define TRACE_WARNING(...)
    #define TRACE_WARNING_ARRAY(p, a, n)
    #define TRACE_WARNING_MPI(p, a)
+   #define TRACE_WARNING_EC_SCALAR(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_INFO)
@@ -96,11 +106,13 @@
    #define TRACE_INFO_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
    #define TRACE_INFO_NET_BUFFER(p, b, o, n)
    #define TRACE_INFO_MPI(p, a) TRACE_MPI(p, a)
+   #define TRACE_INFO_EC_SCALAR(p, a, n) TRACE_EC_SCALAR(p, a, n)
 #else
    #define TRACE_INFO(...)
    #define TRACE_INFO_ARRAY(p, a, n)
    #define TRACE_INFO_NET_BUFFER(p, b, o, n)
    #define TRACE_INFO_MPI(p, a)
+   #define TRACE_INFO_EC_SCALAR(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_DEBUG)
@@ -108,11 +120,13 @@
    #define TRACE_DEBUG_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
    #define TRACE_DEBUG_NET_BUFFER(p, b, o, n)
    #define TRACE_DEBUG_MPI(p, a) TRACE_MPI(p, a)
+   #define TRACE_DEBUG_EC_SCALAR(p, a, n) TRACE_EC_SCALAR(p, a, n)
 #else
    #define TRACE_DEBUG(...)
    #define TRACE_DEBUG_ARRAY(p, a, n)
    #define TRACE_DEBUG_NET_BUFFER(p, b, o, n)
    #define TRACE_DEBUG_MPI(p, a)
+   #define TRACE_DEBUG_EC_SCALAR(p, a, n)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_LEVEL_VERBOSE)
@@ -120,11 +134,13 @@
    #define TRACE_VERBOSE_ARRAY(p, a, n) TRACE_ARRAY(p, a, n)
    #define TRACE_VERBOSE_NET_BUFFER(p, b, o, n)
    #define TRACE_VERBOSE_MPI(p, a) TRACE_MPI(p, a)
+   #define TRACE_VERBOSE_EC_SCALAR(p, a, n) TRACE_EC_SCALAR(p, a, n)
 #else
    #define TRACE_VERBOSE(...)
    #define TRACE_VERBOSE_ARRAY(p, a, n)
    #define TRACE_VERBOSE_NET_BUFFER(p, b, o, n)
    #define TRACE_VERBOSE_MPI(p, a)
+   #define TRACE_VERBOSE_EC_SCALAR(p, a, n)
 #endif
 
 //C++ guard

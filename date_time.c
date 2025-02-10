@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Dependencies
@@ -94,9 +94,11 @@ const char_t *formatSystemTime(systime_t time, char_t *str)
    //Retrieve hours
    hours = time;
 
-   //The str parameter is optional
-   if(!str)
+   //The parameter is optional
+   if(str == NULL)
+   {
       str = buffer;
+   }
 
    //Format system time
    if(hours > 0)
@@ -134,9 +136,11 @@ const char_t *formatDate(const DateTime *date, char_t *str)
 {
    static char_t buffer[40];
 
-   //The str parameter is optional
-   if(!str)
+   //The parameter is optional
+   if(str == NULL)
+   {
       str = buffer;
+   }
 
    //Format date
    if(date->dayOfWeek)
@@ -164,8 +168,10 @@ const char_t *formatDate(const DateTime *date, char_t *str)
 
 void getCurrentDate(DateTime *date)
 {
+   time_t time;
+
    //Retrieve current time
-   time_t time = getCurrentUnixTime();
+   time = getCurrentUnixTime();
 
    //Convert Unix timestamp to date
    convertUnixTimeToDate(time, date);

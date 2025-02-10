@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _OS_PORT_H
@@ -127,6 +127,9 @@
 //POSIX Threads port?
 #elif defined(__linux__) || defined(__FreeBSD__)
    #include "os_port_posix.h"
+//Custom port?
+#elif defined(USE_CUSTOM_OS)
+   #include "os_port_custom.h"
 #endif
 
 //Fill block of memory

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -80,12 +80,15 @@ void osStartKernel(void)
 OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    const OsTaskParameters *params)
 {
+   size_t stackSize;
    portBASE_TYPE status;
    TaskHandle_t handle;
 
 #ifdef IDF_VER
    //The stack size is specified in bytes
-   stackSize *= sizeof(uint32_t);
+   stackSize = params->stackSize * sizeof(uint32_t);
+#else
+   stackSize = params->stackSize;
 #endif
 
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
@@ -94,16 +97,16 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    {
       //Create a new task
       handle = xTaskCreateStatic((TaskFunction_t) taskCode, name,
-         params->stackSize, arg, params->priority,
-         (StackType_t *) params->stack, params->tcb);
+         stackSize, arg, params->priority, (StackType_t *) params->stack,
+         params->tcb);
    }
    else
 #endif
    //Dynamic allocation?
    {
       //Create a new task
-      status = xTaskCreate((TaskFunction_t) taskCode, name, params->stackSize,
-         arg, params->priority, &handle);
+      status = xTaskCreate((TaskFunction_t) taskCode, name, stackSize, arg,
+         params->priority, &handle);
 
       //Failed to create task?
       if(status != pdPASS)

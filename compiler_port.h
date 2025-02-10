@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _COMPILER_PORT_H
@@ -44,10 +44,18 @@
 extern "C" {
 #endif
 
-//Types
-typedef char char_t;
-typedef signed int int_t;
-typedef unsigned int uint_t;
+//TI C2000-CGT compiler?
+#if defined(__TI_COMPILER_VERSION__) && defined(__TMS320C2000__)
+   typedef char char_t;
+   typedef int32_t int_t;
+   typedef uint32_t uint_t;
+   typedef int16_t int8_t;
+   typedef uint16_t uint8_t;
+#else
+   typedef char char_t;
+   typedef signed int int_t;
+   typedef unsigned int uint_t;
+#endif
 
 #if !defined(R_TYPEDEFS_H) && !defined(USE_CHIBIOS_2)
    typedef int bool_t;
@@ -108,6 +116,15 @@ typedef unsigned int uint_t;
    #define PRIx16 "x"
    #define PRIX8 "X"
    #define PRIX16 "X"
+   #define PRIuSIZE "u"
+   #define PRIXSIZE "X"
+   #define PRIuTIME "lu"
+//TI C2000-CGT compiler?
+#elif defined(__TI_COMPILER_VERSION__) && defined(__TMS320C2000__)
+   #undef PRIu8
+   #undef PRIX8
+   #define PRIu8 PRIu16
+   #define PRIX8 PRIX16
    #define PRIuSIZE "u"
    #define PRIXSIZE "X"
    #define PRIuTIME "lu"
@@ -181,8 +198,8 @@ typedef unsigned int uint_t;
    int strcasecmp(const char *s1, const char *s2);
    int strncasecmp(const char *s1, const char *s2, size_t n);
    char *strtok_r(char *s, const char *delim, char **last);
-//TI ARM compiler?
-#elif defined(__TI_ARM__)
+//TI CGT compiler?
+#elif defined(__TI_COMPILER_VERSION__)
    int strcasecmp(const char *s1, const char *s2);
    int strncasecmp(const char *s1, const char *s2, size_t n);
    char *strtok_r(char *s, const char *delim, char **last);
@@ -231,8 +248,8 @@ typedef unsigned int uint_t;
    #define __packed_struct struct
    #undef __packed_union
    #define __packed_union union
-//TI ARM compiler?
-#elif defined(__TI_ARM__)
+//TI CGT compiler?
+#elif defined(__TI_COMPILER_VERSION__)
    #undef __packed_struct
    #define __packed_struct struct __attribute__((__packed__))
    #undef __packed_union
@@ -268,8 +285,8 @@ typedef unsigned int uint_t;
    //Renesas CC-RX compiler?
    #elif defined(__CCRX__)
       #define __weak_func
-   //TI ARM compiler?
-   #elif defined(__TI_ARM__)
+   //TI CGT compiler?
+   #elif defined(__TI_COMPILER_VERSION__)
       #define __weak_func __attribute__((weak))
    //Win32 compiler?
    #elif defined(_WIN32)
