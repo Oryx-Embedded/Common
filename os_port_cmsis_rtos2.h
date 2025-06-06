@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _OS_PORT_CMSIS_RTOS2_H
@@ -37,7 +37,7 @@
 #endif
 
 #ifdef RTE_CMSIS_RTOS2_FreeRTOS
-   #include "freertos.h"
+   #include "FreeRTOS.h"
 #endif
 
 //Invalid task identifier

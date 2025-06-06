@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Dependencies
@@ -90,7 +90,9 @@ const char_t *pathGetFilename(const char_t *path)
    {
       //Forward slash or backslash character found?
       if(path[n - 1] != '/' && path[n - 1] != '\\')
+      {
          break;
+      }
 
       //Previous character
       n--;
@@ -101,7 +103,9 @@ const char_t *pathGetFilename(const char_t *path)
    {
       //Forward slash or backslash character found?
       if(path[n - 1] == '/' || path[n - 1] == '\\')
+      {
          break;
+      }
 
       //Previous character
       n--;
@@ -218,7 +222,9 @@ void pathCanonicalize(char_t *path)
             {
                //Remove the final slash if necessary
                if(path[i] == '\0')
+               {
                   k--;
+               }
             }
          }
          //".." element found?
@@ -232,7 +238,9 @@ void pathCanonicalize(char_t *path)
 
                //Append a slash if necessary
                if(path[i] == '/')
+               {
                   path[k++] = '/';
+               }
             }
             else if(k > 1)
             {
@@ -240,7 +248,9 @@ void pathCanonicalize(char_t *path)
                for(j = 1; j < k; j++)
                {
                   if(path[k - j - 1] == '/')
+                  {
                      break;
+                  }
                }
 
                //Slash separator found?
@@ -305,7 +315,9 @@ void pathCanonicalize(char_t *path)
 
             //Append a slash if necessary
             if(path[i] == '/')
+            {
                path[k++] = '/';
+            }
          }
 
          //Move to the next token
@@ -341,13 +353,17 @@ void pathAddSlash(char_t *path, size_t maxLen)
    {
       //Check the length of the resulting string
       if(maxLen >= 1)
+      {
          osStrcpy(path, "/");
+      }
    }
    else if(path[n - 1] != '/' && path[n - 1] != '\\')
    {
       //Check the length of the resulting string
       if(maxLen >= (n + 1))
+      {
          osStrcat(path, "/");
+      }
    }
 }
 
@@ -363,7 +379,9 @@ void pathRemoveSlash(char_t *path)
 
    //Skip the leading slash character
    if(pathIsAbsolute(path))
+   {
       path++;
+   }
 
    //Search for the first slash character to be removed
    for(end = NULL; *path != '\0'; path++)
@@ -379,8 +397,10 @@ void pathRemoveSlash(char_t *path)
    }
 
    //Remove the trailing slash characters
-   if(end)
+   if(end != NULL)
+   {
       *end = '\0';
+   }
 }
 
 
@@ -398,7 +418,9 @@ void pathCombine(char_t *path, const char_t *more, size_t maxLen)
 
    //Append a slash character to the first path
    if(*path != '\0')
+   {
       pathAddSlash(path, maxLen);
+   }
 
    //Skip any slash character at the beginning of the second path
    while(*more == '/' || *more == '\\')
