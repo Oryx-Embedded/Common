@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _DATE_TIME_H
@@ -37,6 +37,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/**
+ * @brief 64-bit time representation
+ **/
+
+typedef int64_t time64_t;
 
 
 /**
@@ -64,7 +71,10 @@ void getCurrentDate(DateTime *date);
 time_t getCurrentUnixTime(void);
 
 void convertUnixTimeToDate(time_t t, DateTime *date);
+void convertUnixTimeToDate64(time64_t t, DateTime *date);
+
 time_t convertDateToUnixTime(const DateTime *date);
+time64_t convertDateToUnixTime64(const DateTime *date);
 
 int_t compareDateTime(const DateTime *date1, const DateTime *date2);
 
