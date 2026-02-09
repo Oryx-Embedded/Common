@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2026 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.4
+ * @version 2.6.0
  **/
 
 #ifndef _OS_PORT_FREERTOS_H
@@ -91,7 +91,9 @@
 
 //Interrupt service routine epilogue
 #ifndef osExitIsr
-   #if defined(__XTENSA__)
+   #if defined(__ADSPSC8xx__)
+      #define osExitIsr(flag) portYIELD_FROM_ISR(flag)
+   #elif defined(__XTENSA__)
       #define osExitIsr(flag) if(flag) portYIELD_FROM_ISR()
    #elif defined(portEXIT_SWITCHING_ISR)
       #define osExitIsr(flag) portEXIT_SWITCHING_ISR()

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2026 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.4
+ * @version 2.6.0
  **/
 
 #ifndef _ERROR_H
@@ -310,6 +310,8 @@ typedef enum
    ERROR_REQUEST_PENDING,
 
    ERROR_RESEED_REQUIRED,
+   ERROR_KEY_EXCH_FAILED,
+   ERROR_TTL_EXCEEDED,
 
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH
