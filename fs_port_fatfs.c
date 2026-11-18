@@ -619,7 +619,7 @@ error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length)
       return ERROR_FAILURE;
 
    //End of file?
-   if(!n)
+   if(n == 0)
       return ERROR_END_OF_FILE;
 
    //Total number of data that have been read

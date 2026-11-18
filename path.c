@@ -256,7 +256,8 @@ void pathCanonicalize(char_t *path)
                //Slash separator found?
                if(j < k)
                {
-                  if(osStrncmp(path + k - j, "..", 2) == 0)
+                  //The previous element is kept only if it is exactly ".."
+                  if(j == 3 && osStrncmp(path + k - j, "..", 2) == 0)
                   {
                      path[k++] = '.';
                      path[k++] = '.';
@@ -349,7 +350,7 @@ void pathAddSlash(char_t *path, size_t maxLen)
    n = osStrlen(path);
 
    //Add a slash character only if necessary
-   if(!n)
+   if(n == 0)
    {
       //Check the length of the resulting string
       if(maxLen >= 1)
